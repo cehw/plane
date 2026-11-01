@@ -3,6 +3,7 @@
 # See the LICENSE file for details.
 
 from django.urls import path
+from plane.app.views.workspace.hub import HubSummaryEndpoint
 
 
 from plane.app.views import (
@@ -40,6 +41,7 @@ from plane.app.views import (
 
 
 urlpatterns = [
+    path("workspaces/<str:slug>/hub-summary/", HubSummaryEndpoint.as_view(), name="hub-summary"),
     path(
         "workspace-slug-check/",
         WorkSpaceAvailabilityCheckEndpoint.as_view(),

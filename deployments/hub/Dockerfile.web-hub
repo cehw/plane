@@ -1,0 +1,12 @@
+FROM plane-hub/web-deps:v1.4.3 AS build
+COPY apps/web/ /app/apps/web/
+# Windows Git checkouts store this upstream symlink as a text file.
+# Recreate it inside Linux so Vite can bundle the native translation resources.
+RUN mv /app/packages/i18n/locales /tmp/plane-i18n-locales && ln -s src/locales /app/packages/i18n/locales
+ENV VITE_API_BASE_URL="" VITE_ADMIN_BASE_URL="" VITE_ADMIN_BASE_PATH="/god-mode"
+ENV VITE_LIVE_BASE_URL="" VITE_LIVE_BASE_PATH="/live" VITE_SPACE_BASE_URL="" VITE_SPACE_BASE_PATH="/spaces" VITE_WEB_BASE_URL=""
+ENV NEXT_TELEMETRY_DISABLED=1 TURBO_TELEMETRY_DISABLED=1 NODE_OPTIONS="--max-old-space-size=8192"
+RUN pnpm turbo run build --filter=web
+
+FROM makeplane/plane-frontend:v1.4.3
+COPY --from=build /app/apps/web/build/client /usr/share/nginx/html

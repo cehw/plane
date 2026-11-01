@@ -67,3 +67,7 @@ temp/
 build/
 node_modules/
 README.md
+
+_tmp/
+docs/local-hub.md
+docs/README.md

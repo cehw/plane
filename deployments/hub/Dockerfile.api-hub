@@ -1,0 +1,3 @@
+FROM makeplane/plane-backend:v1.4.3
+COPY apps/api/plane/app/views/workspace/hub.py /code/plane/app/views/workspace/hub.py
+COPY apps/api/plane/app/urls/workspace.py /code/plane/app/urls/workspace.py

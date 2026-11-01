@@ -1,0 +1,90 @@
+export type HubRecord = {
+  id: string;
+  project: string;
+  title: string;
+  kind: string;
+  start: string;
+  end: string;
+};
+export type HubSnapshot = {
+  generated_at: string;
+  netatmo: {
+    service: string;
+    recent_stations: number;
+    recent_countries: number;
+    new_since_reference: number;
+    collector: { last_observation_utc?: string; global_scan_complete?: boolean };
+    tiles: { successful: number; failed: number; pending: number };
+    archive: { bytes: number; csv_files: number; known_gap?: string };
+    backup?: { completed_utc?: string; state?: string };
+    backup_attempt?: { state?: string; started_utc?: string };
+  };
+};
+export type HubSummary = {
+  snapshot: HubSnapshot | null;
+  snapshot_error: string | null;
+  work_records: HubRecord[];
+  work_records_updated_at: string | null;
+  workdesk_url: string | null;
+  plane: { projects: number; open: number; in_progress: number; overdue: number };
+};
+export type HubHealth = { label: string; tone: "good" | "warn" | "bad" | "muted"; detail: string };
+
+export function ageMinutes(value?: string | null, now = Date.now()): number | null {
+  if (!value) return null;
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) ? Math.max(0, (now - parsed) / 60000) : null;
+}
+
+export function ageLabel(value?: string | null, now = Date.now()): string {
+  const age = ageMinutes(value, now);
+  if (age === null) return "尚无时间记录";
+  if (age < 1) return "刚刚";
+  if (age < 60) return `${Math.floor(age)} 分钟前`;
+  if (age < 1440) return `${Math.floor(age / 60)} 小时前`;
+  return `${Math.floor(age / 1440)} 天前`;
+}
+
+export function snapshotIsStale(snapshot: HubSnapshot | null, now = Date.now()): boolean {
+  const age = ageMinutes(snapshot?.generated_at, now);
+  return age === null || age > 90;
+}
+
+export function collectorHealth(snapshot: HubSnapshot | null, now = Date.now()): HubHealth {
+  if (!snapshot) return { label: "等待同步", tone: "muted", detail: "尚未接收到 Climet3 状态" };
+  if (snapshotIsStale(snapshot, now))
+    return { label: "状态已过期", tone: "warn", detail: "无法确认当前运行情况" };
+  if (snapshot.netatmo.service !== "active")
+    return { label: "需要检查", tone: "bad", detail: `服务：${snapshot.netatmo.service}` };
+  const age = ageMinutes(snapshot.netatmo.collector.last_observation_utc, now);
+  if (age === null || age > 60)
+    return {
+      label: "观测延迟",
+      tone: "warn",
+      detail: `最近观测：${ageLabel(snapshot.netatmo.collector.last_observation_utc, now)}`,
+    };
+  return {
+    label: "持续采集中",
+    tone: "good",
+    detail: `最近观测：${ageLabel(snapshot.netatmo.collector.last_observation_utc, now)}`,
+  };
+}
+
+export function backupHealth(snapshot: HubSnapshot | null, now = Date.now()): HubHealth {
+  if (!snapshot) return { label: "等待同步", tone: "muted", detail: "尚无 NAS 回执" };
+  const { backup, backup_attempt: attempt } = snapshot.netatmo;
+  const detail = `最近成功：${ageLabel(backup?.completed_utc, now)}`;
+  if (snapshotIsStale(snapshot, now)) return { label: "待核对", tone: "warn", detail };
+  if (attempt?.state && !["SUCCESS", "RUNNING"].includes(attempt.state))
+    return { label: "最近备份失败", tone: "bad", detail };
+  const age = ageMinutes(backup?.completed_utc, now);
+  if (age === null) return { label: "暂无成功回执", tone: "warn", detail: "需要核对 NAS 备份" };
+  if (age > 90) return { label: "备份延迟", tone: "warn", detail };
+  return { label: attempt?.state === "RUNNING" ? "正在备份" : "备份正常", tone: "good", detail };
+}
+
+export function latestRecords(records: HubRecord[]): HubRecord[] {
+  return records
+    .toSorted((a, b) => b.end.localeCompare(a.end) || b.start.localeCompare(a.start))
+    .slice(0, 5);
+}

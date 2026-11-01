@@ -21,6 +21,7 @@ import { useProject } from "@/hooks/store/use-project";
 // local imports
 import { StickiesWidget } from "../stickies/widget";
 import { HomeLoader, NoProjectsEmptyState, RecentActivityWidget } from "./widgets";
+import { HubSummaryPanel } from "./hub-summary";
 import { DashboardQuickLinks } from "./widgets/links";
 import { ManageWidgetsModal } from "./widgets/manage";
 
@@ -66,8 +67,14 @@ export const DashboardWidgets = observer(function DashboardWidgets() {
   // theme hook
   const { resolvedTheme } = useTheme();
   // store hooks
-  const { toggleWidgetSettings, widgetsMap, showWidgetSettings, orderedWidgets, isAnyWidgetEnabled, loading } =
-    useHome();
+  const {
+    toggleWidgetSettings,
+    widgetsMap,
+    showWidgetSettings,
+    orderedWidgets,
+    isAnyWidgetEnabled,
+    loading,
+  } = useHome();
   const { loader } = useProject();
   // plane hooks
   const { t } = useTranslation();
@@ -86,6 +93,7 @@ export const DashboardWidgets = observer(function DashboardWidgets() {
         isModalOpen={showWidgetSettings}
         handleOnClose={() => toggleWidgetSettings(false)}
       />
+      {!isWikiApp && <HubSummaryPanel workspaceSlug={workspaceSlug.toString()} />}
       {!isWikiApp && <NoProjectsEmptyState />}
 
       {isAnyWidgetEnabled ? (
