@@ -10,11 +10,8 @@ export function HubPortfolio({
   projects: HubSummary["plane"]["portfolio"];
 }) {
   return (
-    <section
-      className="rounded-xl border border-subtle bg-surface-1 p-4"
-      aria-label="项目看板与下一步"
-    >
-      <h3 className="mb-4 flex items-center gap-2 text-14 font-semibold text-primary">
+    <section className="min-w-0" aria-label="项目看板与下一步">
+      <h3 className="sr-only">
         <FolderKanban size={16} />
         项目看板与下一步 <span className="text-tertiary">{projects.length}</span>
       </h3>

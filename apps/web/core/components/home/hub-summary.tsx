@@ -15,7 +15,7 @@ import {
 } from "./hub-summary.helpers";
 import type { HubHealth } from "./hub-summary.helpers";
 
-import { HubProjectNavigator } from "./hub-project-navigator";
+import { HubHomeTimeline } from "./hub-home-timeline";
 import { nativeViewUrl } from "./hub-summary.helpers";
 import { HubPortfolio } from "./hub-portfolio";
 import { eventTime } from "./hub-summary.helpers";
@@ -133,12 +133,11 @@ export function HubSummaryPanel({ workspaceSlug }: { workspaceSlug: string }) {
       : []),
   ];
   return (
-    <section className="space-y-5" aria-label="状态与待办">
+    <section className="space-y-4" aria-label="状态与待办">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="tracking-widest mb-1 text-12 font-medium text-tertiary">HAN WORK HUB</p>
-          <h2 className="text-20 font-semibold text-primary">状态与待办</h2>
-          <p className="mt-1 text-12 text-tertiary">运行状态、项目进度与下一步</p>
+          <h2 className="text-20 font-semibold text-primary">工作概览</h2>
+          <p className="mt-1 text-12 text-tertiary">优先项目、当前待办与数据状态</p>
         </div>
         <div className="flex flex-wrap items-center gap-4">
           <HubAppearanceSwitch />
@@ -171,71 +170,111 @@ export function HubSummaryPanel({ workspaceSlug }: { workspaceSlug: string }) {
           ))}
         </div>
       )}
-      <div
-        className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3"
-        data-testid="hub-metrics"
-      >
-        <Metric
-          icon={ShieldCheck}
-          title="NAS · 最近备份"
-          indicator
-          value={eventTime(netatmo?.backup?.completed_utc)}
-          detail={
-            backup.tone === "good"
-              ? ageLabel(netatmo?.backup?.completed_utc)
-              : `${backup.label} · ${backup.detail}`
-          }
-          tone={backup.tone}
-          href={dataUrl}
-        >
-          <NasCapacity share={netatmo?.nas_share} compact />
-        </Metric>
-        <Metric
-          icon={ClipboardList}
-          title="正在推进"
-          value={`${number(data.plane.in_progress)} 项`}
-          detail={`${data.plane.open - data.plane.in_progress - data.plane.waiting_feedback} 项待办 · ${data.plane.waiting_feedback} 项等待反馈`}
-          href={`/${workspaceSlug}/projects/`}
-        />
-        <Metric
-          icon={CircleAlert}
-          title="逾期待处理"
-          value={data.plane.total ? `${number(data.plane.overdue)} 项` : "尚无任务"}
-          detail={
-            data.plane.overdue
-              ? "查看截止日期，安排下一步"
-              : data.plane.total
-                ? "当前没有逾期任务"
-                : "先建立任务，开始跟踪进度"
-          }
-          tone={data.plane.overdue ? "warn" : "muted"}
-          href={`/${workspaceSlug}/projects/`}
-        />
+      <HubHomeTimeline workspaceSlug={workspaceSlug} projects={data.plane.portfolio} />
+      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(260px,1fr)]">
+        <HubOnlineCollection snapshot={snapshot} href={`${dataUrl}#online-collection`} compact />
+        <aside className="min-w-0 space-y-3">
+          <a
+            href={dataUrl}
+            className="block min-w-0 rounded-lg border border-subtle bg-surface-1 p-4 hover:bg-surface-2"
+          >
+            <div className="flex items-center justify-between gap-3">
+              <h3 className="flex items-center gap-2 text-14 font-semibold">
+                <ShieldCheck size={16} />
+                备份与存储
+              </h3>
+              <ArrowUpRight size={14} className="text-tertiary" />
+            </div>
+            <p className={`mt-3 text-13 ${tones[backup.tone]}`}>
+              {backup.label} · {eventTime(netatmo?.backup?.completed_utc)}
+            </p>
+            {backup.tone !== "good" && (
+              <p className="mt-1 text-12 text-secondary">{backup.detail}</p>
+            )}
+            <NasCapacity share={netatmo?.nas_share} compact />
+          </a>
+          <div className="min-w-0 space-y-2 rounded-lg border border-subtle bg-surface-1 p-4">
+            <h3 className="flex items-center gap-2 text-14 font-semibold text-primary">
+              <CircleAlert size={16} />
+              需要关注
+            </h3>
+            {netatmo?.archive.known_gap ? (
+              <>
+                <p className="text-13 text-warning-primary">历史观测存在缺口</p>
+                <p className="text-12 text-secondary">{netatmo.archive.known_gap}</p>
+              </>
+            ) : (
+              <p className="text-12 text-tertiary">
+                {netatmo ? "暂无已记录的数据缺口" : "等待数据状态同步"}
+              </p>
+            )}
+            {dataUrl && (
+              <a href={dataUrl} className="inline-block text-12 text-accent-primary">
+                查看采集与备份详情 ↗
+              </a>
+            )}
+          </div>
+        </aside>
       </div>
-      <HubProjectNavigator workspaceSlug={workspaceSlug} projects={data.plane.portfolio} />
-      <HubProjectProgress
-        workspaceSlug={workspaceSlug}
-        plane={data.plane}
-        records={data.work_records}
-      />
-      <HubTasks
-        workspaceSlug={workspaceSlug}
-        plane={data.plane}
-        onRefresh={async () => {
-          await mutate();
-        }}
-      />
-      <HubOnlineCollection snapshot={snapshot} href={`${dataUrl}#online-collection`} compact />
-      <details className="rounded-xl border border-subtle bg-surface-1 p-4">
+      <details className="rounded-lg border border-subtle bg-surface-1 p-4">
         <summary className="cursor-pointer text-14 font-semibold">
-          全部 {data.plane.projects} 个项目 · 进展与下一步
+          项目进度与待办 · {number(data.plane.open)} 项未完成
         </summary>
-        <div className="mt-4">
-          <HubPortfolio workspaceSlug={workspaceSlug} projects={data.plane.portfolio} />
+        <div className="mt-4 space-y-4">
+          <div
+            className="grid grid-cols-2 gap-x-4 gap-y-3 rounded-lg border border-subtle bg-surface-1 px-4 py-3 sm:grid-cols-4"
+            data-testid="hub-metrics"
+          >
+            {[
+              { label: "进行中", value: data.plane.in_progress },
+              {
+                label: "待办",
+                value: data.plane.open - data.plane.in_progress - data.plane.waiting_feedback,
+              },
+              { label: "等待反馈", value: data.plane.waiting_feedback },
+              { label: "逾期", value: data.plane.overdue },
+            ].map(({ label, value }) => (
+              <a
+                key={label}
+                href={`/${workspaceSlug}/projects/`}
+                className="flex items-baseline justify-between gap-3 text-12 text-secondary hover:text-accent-primary"
+              >
+                <span>{label}</span>
+                <strong
+                  className={`text-20 font-semibold ${label === "逾期" && value ? "text-warning-primary" : "text-primary"}`}
+                >
+                  {number(value)}
+                </strong>
+              </a>
+            ))}
+          </div>
+          <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(320px,2fr)]">
+            <HubProjectProgress
+              workspaceSlug={workspaceSlug}
+              plane={data.plane}
+              records={data.work_records}
+            />
+            <HubTasks
+              workspaceSlug={workspaceSlug}
+              plane={data.plane}
+              onRefresh={async () => {
+                await mutate();
+              }}
+            />
+          </div>
+          <details className="rounded-xl border border-subtle bg-surface-1 p-4">
+            <summary className="cursor-pointer text-14 font-semibold">
+              全部 {data.plane.projects} 个项目 · 进展与下一步
+            </summary>
+            <div className="mt-4">
+              <HubPortfolio workspaceSlug={workspaceSlug} projects={data.plane.portfolio} />
+            </div>
+          </details>
         </div>
       </details>
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
-        <div className="min-w-0 rounded-xl border border-subtle bg-surface-1 p-4 lg:col-span-3">
+      <details className="rounded-lg border border-subtle bg-surface-1 p-4">
+        <summary className="cursor-pointer text-14 font-semibold">最近工作记录</summary>
+        <div className="mt-3 min-w-0">
           <div className="mb-3 flex items-center justify-between gap-3">
             <h3 className="flex items-center gap-2 text-14 font-semibold text-primary">
               <ClipboardList size={16} aria-hidden="true" />
@@ -251,9 +290,9 @@ export function HubSummaryPanel({ workspaceSlug }: { workspaceSlug: string }) {
             )}
           </div>
           {records.length ? (
-            <ul className="divide-y divide-subtle">
+            <ul className="grid grid-cols-1 gap-x-6 sm:grid-cols-2">
               {records.map((record) => (
-                <li key={record.id} className="py-3 first:pt-0 last:pb-0">
+                <li key={record.id} className="border-t border-subtle py-2">
                   <div className="mb-1 flex flex-wrap gap-x-2 gap-y-1 text-11 text-tertiary">
                     <span>{record.project}</span>
                     <span>·</span>
@@ -273,28 +312,7 @@ export function HubSummaryPanel({ workspaceSlug }: { workspaceSlug: string }) {
             历史记录来自工作时间轴 · 同步于 {ageLabel(data.work_records_updated_at)}
           </p>
         </div>
-        <div className="min-w-0 space-y-3 rounded-xl border border-subtle bg-surface-1 p-4 lg:col-span-2">
-          <h3 className="flex items-center gap-2 text-14 font-semibold text-primary">
-            <CircleAlert size={16} />
-            需要关注
-          </h3>
-          {netatmo?.archive.known_gap ? (
-            <>
-              <p className="text-13 text-warning-primary">历史观测存在缺口</p>
-              <p className="text-12 text-secondary">{netatmo.archive.known_gap}</p>
-            </>
-          ) : (
-            <p className="text-12 text-tertiary">
-              {netatmo ? "暂无已记录的数据缺口" : "等待数据状态同步"}
-            </p>
-          )}
-          {dataUrl && (
-            <a href={dataUrl} className="inline-block text-12 text-accent-primary">
-              查看采集与备份详情 ↗
-            </a>
-          )}
-        </div>
-      </div>
+      </details>
     </section>
   );
 }

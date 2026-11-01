@@ -22,7 +22,7 @@ export function HubOnlineCollection({
   const attention = rows.filter((r) => r.health.tone === "bad" || r.health.tone === "warn").length;
   return (
     <section id="online-collection" aria-label="在线采集">
-      <Card>
+      <Card className="gap-0 p-4 shadow-none">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <h3 className="flex items-center gap-2 text-16 font-semibold">
             <Activity size={18} aria-hidden="true" />
@@ -34,33 +34,46 @@ export function HubOnlineCollection({
             </a>
           )}
         </div>
-        <p className="mb-3 text-12 text-tertiary">
+        <p className="mb-2 text-11 text-tertiary">
           采集任务：{good} 项正常{attention ? ` · ${attention} 项需关注` : ""} ·{" "}
           {rows.length - good - attention} 项待核实 · 核查{" "}
           {eventTime(snapshot?.online_collection?.checked_at ?? snapshot?.generated_at)}
         </p>
-        <div
-          className={`grid grid-cols-1 gap-2 ${compact ? "sm:grid-cols-2 xl:grid-cols-3" : "sm:grid-cols-2"}`}
-        >
+        <div className="divide-y divide-subtle">
           {grouped.others
             .filter((row) => row.id === "netatmo")
             .map((row) => (
-              <div key={row.id} className="min-w-0 rounded-lg border border-subtle p-3">
-                <HubCollectorStatus row={row} compact={compact} />
-              </div>
+              <HubCollectorStatus key={row.id} row={row} compact={compact} dense />
             ))}
           <HubHkoCollection
             rows={grouped}
             coverage={snapshot?.online_collection?.hko}
             compact={compact}
           />
-          {grouped.others
-            .filter((row) => row.id !== "netatmo")
-            .map((row) => (
-              <div key={row.id} className="min-w-0 rounded-lg border border-subtle p-3">
-                <HubCollectorStatus row={row} compact={compact} />
+          {compact ? (
+            <details className="py-3 text-12">
+              <summary className="cursor-pointer text-secondary">
+                其他采集 · {grouped.others.filter((row) => row.id !== "netatmo").length} 项 ·
+                Open-Meteo / HRES
+              </summary>
+              <div className="mt-2 divide-y divide-subtle">
+                {grouped.others
+                  .filter((row) => row.id !== "netatmo")
+                  .map((row) => (
+                    <HubCollectorStatus key={row.id} row={row} compact dense />
+                  ))}
               </div>
-            ))}
+            </details>
+          ) : (
+            <>
+              {" "}
+              {grouped.others
+                .filter((row) => row.id !== "netatmo")
+                .map((row) => (
+                  <HubCollectorStatus key={row.id} row={row} compact={compact} dense />
+                ))}
+            </>
+          )}
         </div>
         {!compact && (
           <p className="mt-3 text-11 text-tertiary">

@@ -22,7 +22,7 @@ function Progress({
 }) {
   const percent = completionPercent(completed, total);
   return (
-    <div className="space-y-2">
+    <div className="space-y-1">
       <div className="flex items-center justify-between gap-3 text-12">
         <span className="text-secondary">{label}</span>
         <span className="shrink-0 text-primary">
@@ -36,7 +36,7 @@ function Progress({
         aria-valuemax={100}
         aria-valuenow={percent ?? undefined}
         aria-valuetext={percent === null ? "暂无任务" : `${completed} / ${total} 项已完成`}
-        className="h-2 overflow-hidden rounded-full bg-surface-1 border border-subtle"
+        className="h-1.5 overflow-hidden rounded-full bg-surface-1 border border-subtle"
       >
         <div
           className="h-full rounded-full bg-accent-primary transition-all"
@@ -59,7 +59,7 @@ export function HubProjectProgress({
   const projects = featuredProjects(plane.portfolio, records);
   return (
     <section
-      className="rounded-xl border border-subtle bg-surface-1 p-4"
+      className="min-w-0 rounded-lg border border-subtle bg-surface-1 p-4"
       aria-label="重点项目与下一步"
     >
       <div className="mb-3 flex items-center justify-between gap-3">
@@ -71,10 +71,10 @@ export function HubProjectProgress({
           全部项目看板 ↗
         </a>
       </div>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div className="divide-y divide-subtle">
         {projects.map((p) => (
-          <article key={p.id} className="min-w-0 rounded-lg border border-subtle bg-surface-2 p-4">
-            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <article key={p.id} className="min-w-0 py-3 first:pt-0 last:pb-0">
+            <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
               <a
                 href={nativeViewUrl(workspaceSlug, p, "kanban")}
                 className="text-14 font-semibold text-primary hover:text-accent-primary"
@@ -93,13 +93,13 @@ export function HubProjectProgress({
                 {projectStatus(p)}
               </Badge>
             </div>
-            <div className="mb-3 flex flex-wrap gap-2 text-11 text-tertiary">
+            <div className="mb-2 flex flex-wrap gap-2 text-11 text-tertiary">
               <span>{priorityLabels[p.priority ?? "none"] ?? "未设优先级"}</span>
               <span>· {p.open} 项未完成</span>
               {p.next?.target_date && <span>· 截止 {p.next.target_date}</span>}
             </div>
-            <Progress label="已录入事项" completed={p.completed} total={p.completed + p.open} />
-            <p className="mt-4 text-11 text-tertiary">下一步</p>
+            <Progress label="事项进度" completed={p.completed} total={p.completed + p.open} />
+            <p className="mt-2 text-11 text-tertiary">下一步</p>
             {p.next ? (
               <a
                 href={`/${workspaceSlug}/projects/${p.id}/issues/${p.next.id}/`}
@@ -110,7 +110,7 @@ export function HubProjectProgress({
             ) : (
               <p className="mt-1 text-13 text-tertiary">暂无未完成事项</p>
             )}
-            <div className="mt-4 flex flex-wrap gap-4 text-12 text-accent-primary">
+            <div className="mt-2 flex flex-wrap gap-3 text-12 text-accent-primary">
               <a href={nativeViewUrl(workspaceSlug, p, "kanban")}>看板 ↗</a>
               <a href={nativeViewUrl(workspaceSlug, p, "gantt")}>时间轴 ↗</a>
               <span className="text-tertiary">
@@ -123,9 +123,7 @@ export function HubProjectProgress({
       {!projects.length && (
         <p className="text-13 text-tertiary">暂无项目任务，建立任务后即可跟踪进度。</p>
       )}
-      <p className="mt-3 text-11 text-tertiary">
-        优先未完成项目：逾期 → 原生优先级 → 进行中 → 截止日 → 最近记录。进度仅代表已录入事项。
-      </p>
+      <p className="mt-3 text-11 text-tertiary">优先显示需推进的项目；进度按已录入事项计算。</p>
     </section>
   );
 }
@@ -150,7 +148,7 @@ export function HubTasks({
       />
       <div className="min-w-0">
         <section
-          className="min-w-0 rounded-xl border border-subtle bg-surface-1 p-4"
+          className="min-w-0 rounded-lg border border-subtle bg-surface-1 p-4"
           aria-label="工作区待办"
         >
           <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
@@ -174,12 +172,12 @@ export function HubTasks({
                 <li key={todo.id}>
                   <a
                     href={`/${workspaceSlug}/projects/${todo.project_id}/issues/${todo.id}/`}
-                    className="flex items-start gap-3 rounded py-3 hover:bg-surface-2"
+                    className="flex items-start gap-2 rounded py-2.5 hover:bg-surface-2"
                   >
                     <Circle size={16} className="mt-0.5 shrink-0 text-accent-primary" />
                     <div className="min-w-0">
                       <p className="text-13 break-words text-primary">{todo.name}</p>
-                      <p className="mt-1 flex flex-wrap gap-x-2 text-11 text-tertiary">
+                      <p className="mt-1 flex flex-wrap gap-x-2 gap-y-0.5 text-11 text-tertiary">
                         <span>
                           {todo.project__identifier}-{todo.sequence_id}
                         </span>
@@ -204,9 +202,7 @@ export function HubTasks({
               </p>
             </div>
           )}
-          <p className="mt-3 text-11 text-tertiary">
-            逾期 → 优先级 → 进行中 → 截止日 · 显示前 8 项 · 点击更新原生任务
-          </p>
+          <p className="mt-3 text-11 text-tertiary">显示优先处理的前 8 项 · 点击进入任务</p>
         </section>
       </div>
     </>

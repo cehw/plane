@@ -109,7 +109,7 @@ export const DashboardWidgets = observer(function DashboardWidgets() {
             );
           })}
         </div>
-      ) : (
+      ) : isWikiApp ? (
         <div className="grid h-full w-full place-items-center">
           <SimpleEmptyState
             title={t("home.empty.widgets.title")}
@@ -117,7 +117,7 @@ export const DashboardWidgets = observer(function DashboardWidgets() {
             assetPath={noWidgetsResolvedPath}
           />
         </div>
-      )}
+      ) : null}
     </div>
   );
 });

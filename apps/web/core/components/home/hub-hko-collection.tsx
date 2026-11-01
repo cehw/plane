@@ -14,13 +14,10 @@ export function HubHkoCollection({
   compact?: boolean;
 }) {
   return (
-    <section
-      aria-label="HKO 采集分组"
-      className="min-w-0 rounded-lg border border-subtle p-3 sm:col-span-2 xl:col-span-full"
-    >
+    <section aria-label="HKO 采集分组" className="min-w-0 py-3">
       <details className="group/hko">
         <summary className="cursor-pointer rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-primary">
-          <span className="text-14 font-semibold">HKO · 香港天文台</span>
+          <span className="text-13 font-semibold">HKO · 香港天文台</span>
           <span className="ml-2 text-11 text-tertiary group-open/hko:hidden">展开详情</span>
           <span className="ml-2 hidden text-11 text-tertiary group-open/hko:inline">收起详情</span>
           <span className="mt-2 grid gap-2 sm:grid-cols-2">

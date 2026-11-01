@@ -9,7 +9,12 @@ import { observer } from "mobx-react";
 import { createPortal } from "react-dom";
 // plane imports
 // components
-import type { ChartDataType, IBlockUpdateData, IBlockUpdateDependencyData, TGanttViews } from "@plane/types";
+import type {
+  ChartDataType,
+  IBlockUpdateData,
+  IBlockUpdateDependencyData,
+  TGanttViews,
+} from "@plane/types";
 import { cn } from "@plane/utils";
 import { GanttChartHeader, GanttChartMainContent } from "@/components/gantt-chart";
 // helpers
@@ -25,6 +30,7 @@ import { getNumberOfDaysBetweenTwoDates, monthView, quarterView, weekView } from
 type ChartViewRootProps = {
   border: boolean;
   title: string;
+  initialDate?: Date;
   loaderTitle: string;
   blockIds: string[];
   blockUpdateHandler: (block: any, payload: IBlockUpdateData) => void;
@@ -57,6 +63,7 @@ export const ChartViewRoot = observer(function ChartViewRoot(props: ChartViewRoo
   const {
     border,
     title,
+    initialDate,
     blockIds,
     loadMoreBlocks,
     loaderTitle,
@@ -94,7 +101,11 @@ export const ChartViewRoot = observer(function ChartViewRoot(props: ChartViewRoo
   const { data } = useUserProfile();
   const startOfWeek = data?.start_of_the_week;
 
-  const updateCurrentViewRenderPayload = (side: null | "left" | "right", view: TGanttViews, targetDate?: Date) => {
+  const updateCurrentViewRenderPayload = (
+    side: null | "left" | "right",
+    view: TGanttViews,
+    targetDate?: Date,
+  ) => {
     const selectedCurrentView: TGanttViews = view;
     const selectedCurrentViewData: ChartDataType | undefined =
       selectedCurrentView && selectedCurrentView === currentViewData?.key
@@ -104,10 +115,22 @@ export const ChartViewRoot = observer(function ChartViewRoot(props: ChartViewRoo
     if (selectedCurrentViewData === undefined) return;
 
     const currentViewHelpers = timelineViewHelpers[selectedCurrentView];
-    const currentRender = currentViewHelpers.generateChart(selectedCurrentViewData, side, targetDate, startOfWeek);
+    const renderInput =
+      side === null && targetDate
+        ? {
+            ...selectedCurrentViewData,
+            data: { ...selectedCurrentViewData.data, currentDate: targetDate },
+          }
+        : selectedCurrentViewData;
+    const currentRender = currentViewHelpers.generateChart(
+      renderInput,
+      side,
+      targetDate,
+      startOfWeek,
+    );
     const mergeRenderPayloads = currentViewHelpers.mergeRenderPayloads as (
       a: IWeekBlock[] | IMonthView | IMonthBlock[],
-      b: IWeekBlock[] | IMonthView | IMonthBlock[]
+      b: IWeekBlock[] | IMonthView | IMonthBlock[],
     ) => IWeekBlock[] | IMonthView | IMonthBlock[];
 
     // updating the prevData, currentData and nextData
@@ -130,7 +153,10 @@ export const ChartViewRoot = observer(function ChartViewRoot(props: ChartViewRoo
         updateRenderView(currentRender.payload);
         setItemsContainerWidth(currentRender.scrollWidth);
         setTimeout(() => {
-          handleScrollToCurrentSelectedDate(currentRender.state, currentRender.state.data.currentDate);
+          handleScrollToCurrentSelectedDate(
+            currentRender.state,
+            currentRender.state.data.currentDate,
+          );
         }, 50);
       }
     }
@@ -142,7 +168,7 @@ export const ChartViewRoot = observer(function ChartViewRoot(props: ChartViewRoo
 
   // handling the scroll positioning from left and right
   useEffect(() => {
-    handleToday();
+    updateCurrentViewRenderPayload(null, currentView, initialDate);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

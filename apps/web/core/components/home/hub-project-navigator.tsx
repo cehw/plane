@@ -27,7 +27,7 @@ export function HubProjectNavigator({
     <section
       id="hub-project-views"
       aria-label="原生项目视图"
-      className="flex shrink-0 flex-wrap items-center gap-3 rounded-lg border border-subtle bg-surface-1 p-3"
+      className="flex shrink-0 flex-wrap items-center gap-2 rounded-lg border border-subtle bg-surface-1 px-3 py-2"
     >
       {projectId && (
         <Button
@@ -46,7 +46,7 @@ export function HubProjectNavigator({
         id="hub-view-project"
         value={project?.id ?? ""}
         onChange={(e) => setSelection(e.target.value)}
-        className="max-w-full rounded-md border border-subtle bg-surface-2 px-3 py-1.5 text-13 text-primary"
+        className="min-w-0 max-w-full flex-1 sm:flex-none sm:max-w-[320px] rounded-md border border-subtle bg-surface-2 px-3 py-1.5 text-13 text-primary"
       >
         {projects.map((p) => (
           <option value={p.id} key={p.id}>
@@ -81,7 +81,7 @@ export function HubProjectNavigator({
         数据资产
       </Button>
       {project && (
-        <span className="text-11 text-tertiary">
+        <span className="ml-auto text-11 text-tertiary">
           {project.dated} 项有日期 · {project.undated} 项未定日期
         </span>
       )}

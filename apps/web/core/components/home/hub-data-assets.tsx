@@ -7,14 +7,7 @@ import { Button } from "@plane/propel/button";
 import { Tabs } from "@plane/propel/tabs";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@plane/propel/table";
 import { HubSummaryService } from "@/services/hub-summary.service";
-import {
-  ageLabel,
-  eventTime,
-  backupHealth,
-  snapshotIsStale,
-  formatCount,
-} from "./hub-summary.helpers";
-import { Metric } from "./hub-summary";
+import { eventTime, backupHealth, snapshotIsStale, formatCount } from "./hub-summary.helpers";
 import { NasCapacity, NasVolumeCapacity } from "./hub-nas-capacity";
 import { HubOnlineCollection } from "./hub-online-collection";
 import { HubCoverage } from "./hub-coverage";
@@ -49,7 +42,7 @@ export function HubDataAssets({ workspaceSlug }: { workspaceSlug: string }) {
   const b = backupHealth(s);
   const stale = snapshotIsStale(s);
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-5 p-4 md:p-6">
+    <div className="mx-auto w-full max-w-[1440px] space-y-4 p-4 md:p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-24 font-semibold text-primary">数据资产</h1>
@@ -70,14 +63,13 @@ export function HubDataAssets({ workspaceSlug }: { workspaceSlug: string }) {
           </Button>
         </div>
       </div>
-      <p className="text-12 text-tertiary">
-        源状态：
-        <Stamp value={s.generated_at} /> · 接收：
-        <Stamp value={s.received_at} />
+      <p className="text-11 text-tertiary" title={`接收：${s.received_at ?? "暂无记录"}（UTC+8）`}>
+        状态更新：
+        <Stamp value={s.generated_at} />
         （UTC+8）
       </p>
       {(stale || error) && (
-        <Card>
+        <Card className="min-w-0 gap-3 p-4 shadow-none">
           <p role="status" className="text-13 text-warning-primary">
             {stale
               ? "快照已过期，下面保留最后已知状态，不能据此确认当前采集和备份正常。"
@@ -85,20 +77,44 @@ export function HubDataAssets({ workspaceSlug }: { workspaceSlug: string }) {
           </p>
         </Card>
       )}
-      <div className="grid grid-cols-1 items-start gap-3 xl:grid-cols-[minmax(0,2fr)_minmax(240px,1fr)]">
+      <div className="grid min-w-0 grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1.65fr)_minmax(280px,1fr)]">
         <HubOnlineCollection snapshot={s} />
-        <Metric
-          icon={ShieldCheck}
-          title="NAS · Netatmo 最近备份"
-          value={eventTime(a.backup?.completed_utc)}
-          detail={
-            b.tone === "good" ? ageLabel(a.backup?.completed_utc) : `${b.label} · ${b.detail}`
-          }
-          tone={b.tone}
-          indicator
-        >
-          <NasCapacity share={a.nas_share} />
-        </Metric>
+        <aside aria-label="备份与完整性" className="space-y-4">
+          <Card className="gap-0 p-4 shadow-none">
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="flex items-center gap-2 text-16 font-semibold">
+                <ShieldCheck size={18} />
+                NAS · 备份与存储
+              </h2>
+              <Badge
+                variant={b.tone === "good" ? "success" : b.tone === "bad" ? "danger" : "warning"}
+              >
+                {b.label}
+              </Badge>
+            </div>
+            <p className="mt-2 text-13 text-secondary">
+              最近完成{" "}
+              <time className="ml-2 font-medium tabular-nums text-primary">
+                {eventTime(a.backup?.completed_utc)}
+              </time>
+            </p>
+            {b.tone !== "good" && <p className="mt-1 text-12 text-warning-primary">{b.detail}</p>}
+            <NasCapacity share={a.nas_share} />
+            <details className="mt-3 border-t border-subtle pt-3 text-12">
+              <summary className="cursor-pointer text-secondary">查看 NAS 卷整体容量</summary>
+              <NasVolumeCapacity volume={a.nas_volume} />
+            </details>
+          </Card>
+          <div className="rounded-lg border border-subtle bg-surface-1 p-4">
+            <h2 className="mb-2 text-13 font-semibold">数据完整性</h2>
+            <p
+              className={`text-12 leading-relaxed ${a.archive.known_gap ? "text-warning-primary" : "text-secondary"}`}
+            >
+              {a.archive.known_gap ?? "暂无已记录缺口"}
+            </p>
+            <p className="mt-2 text-11 text-tertiary">备份保存已有观测，不会补回历史缺口。</p>
+          </div>
+        </aside>
       </div>
       <Tabs defaultValue="assets">
         <Tabs.List>
@@ -107,85 +123,67 @@ export function HubDataAssets({ workspaceSlug }: { workspaceSlug: string }) {
           <Tabs.Indicator />
         </Tabs.List>
         <Tabs.Content value="assets" className="space-y-5 pt-5">
-          <HubCoverage snapshot={s} storage />
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>数据资产</TableHead>
-                <TableHead>保存优先级</TableHead>
-                <TableHead>现有规模</TableHead>
-                <TableHead>存储与状态</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              <TableRow>
-                <TableCell>Netatmo 历史 CSV</TableCell>
-                <TableCell>
-                  <Badge variant="warning">关键 · 不可重新抓取</Badge>
-                </TableCell>
-                <TableCell>
-                  {formatCount(a.archive.csv_files)} 文件 · {(a.archive.bytes / 1e9).toFixed(2)} GB
-                </TableCell>
-                <TableCell>Climet3 → HD6500 NAS</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell>Netatmo 全球新采集</TableCell>
-                <TableCell>
-                  <Badge variant="warning">关键 · 长期保留</Badge>
-                </TableCell>
-                <TableCell>{formatCount(a.recent_stations)} 站 / 近 24 小时</TableCell>
-                <TableCell>SQLite 观测、查询队列与站点目录</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell>采集代码与去密配置</TableCell>
-                <TableCell>
-                  <Badge variant="brand">关键 · 可恢复运行</Badge>
-                </TableCell>
-                <TableCell>随关键采集备份</TableCell>
-                <TableCell>恢复采集时需要重新授权凭据</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell>HRES</TableCell>
-                <TableCell>
-                  <Badge>可重建</Badge>
-                </TableCell>
-                <TableCell>尚未接入实时下载监控</TableCell>
-                <TableCell>
-                  {s.hres?.policy ?? "优先保留下载脚本与配置；原始文件可重新下载"}
-                </TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
-          <div className="space-y-4">
-            <Card>
-              <h2 className="text-16 font-semibold">采集进度</h2>
-              <dl className="grid grid-cols-2 gap-3 text-13">
-                <dt className="text-tertiary">近 24 小时模块观测</dt>
-                <dd>{formatCount(a.recent_module_observations)}</dd>
-                <dt className="text-tertiary">活动查询网格</dt>
-                <dd>{formatCount(a.tiles.active)}</dd>
-                <dt className="text-tertiary">最近成功 / 待重试 / 尚未成功</dt>
-                <dd>
-                  {formatCount(a.tiles.successful)} / {formatCount(a.tiles.failed)} /{" "}
-                  {formatCount(a.tiles.pending)}
-                </dd>
-              </dl>
-              <p className="text-12 text-tertiary">
-                {a.collector.global_scan_complete
-                  ? "已记录首轮扫描完成。"
-                  : "全球首轮扫描尚未完成。"}
-                网格会动态细分，数量不代表全球覆盖百分比。
-              </p>
-            </Card>
-          </div>
+          <HubCoverage snapshot={s} />
+          <details className="rounded-xl border border-subtle bg-surface-1 p-4">
+            <summary className="cursor-pointer text-14 font-semibold">数据清单与保存策略</summary>
+            <div className="mt-3 overflow-x-auto">
+              <Table className="min-w-[650px]">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>数据资产</TableHead>
+                    <TableHead>保存优先级</TableHead>
+                    <TableHead>现有规模</TableHead>
+                    <TableHead>存储与状态</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  <TableRow>
+                    <TableCell>Netatmo 历史 CSV</TableCell>
+                    <TableCell>
+                      <Badge variant="warning">关键 · 不可重新抓取</Badge>
+                    </TableCell>
+                    <TableCell>
+                      {formatCount(a.archive.csv_files)} 文件 · {(a.archive.bytes / 1e9).toFixed(2)}{" "}
+                      GB
+                    </TableCell>
+                    <TableCell>Climet3 → HD6500 NAS</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>Netatmo 全球新采集</TableCell>
+                    <TableCell>
+                      <Badge variant="warning">关键 · 长期保留</Badge>
+                    </TableCell>
+                    <TableCell>{formatCount(a.recent_stations)} 站 / 近 24 小时</TableCell>
+                    <TableCell>SQLite 观测、查询队列与站点目录</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>采集代码与去密配置</TableCell>
+                    <TableCell>
+                      <Badge variant="brand">关键 · 可恢复运行</Badge>
+                    </TableCell>
+                    <TableCell>随关键采集备份</TableCell>
+                    <TableCell>恢复采集时需要重新授权凭据</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>HRES</TableCell>
+                    <TableCell>
+                      <Badge>可重建</Badge>
+                    </TableCell>
+                    <TableCell>尚未接入实时下载监控</TableCell>
+                    <TableCell>
+                      {s.hres?.policy ?? "优先保留下载脚本与配置；原始文件可重新下载"}
+                    </TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </div>
+          </details>
         </Tabs.Content>
-        <Tabs.Content value="backup" className="space-y-5 pt-5">
-          <Card>
-            <h2 className="text-16 font-semibold">NAS 容量</h2>
-            <NasCapacity share={a.nas_share} />
-            <NasVolumeCapacity volume={a.nas_volume} />
-          </Card>
-          <Card>
+        <Tabs.Content
+          value="backup"
+          className="grid items-start gap-4 pt-4 lg:grid-cols-[minmax(0,1.65fr)_minmax(280px,1fr)]"
+        >
+          <Card className="min-w-0 gap-3 p-4 shadow-none">
             <div className="flex items-center justify-between">
               <h2 className="text-16 font-semibold">NAS 备份回执</h2>
               <Badge
@@ -194,7 +192,7 @@ export function HubDataAssets({ workspaceSlug }: { workspaceSlug: string }) {
                 {b.label}
               </Badge>
             </div>
-            <Table>
+            <Table className="table-fixed [&_td:first-child]:w-28 [&_td]:align-top [&_td]:break-words">
               <TableBody>
                 <TableRow>
                   <TableCell>最近成功完成</TableCell>
@@ -226,7 +224,7 @@ export function HubDataAssets({ workspaceSlug }: { workspaceSlug: string }) {
               </TableBody>
             </Table>
           </Card>
-          <Card>
+          <Card className="min-w-0 gap-3 p-4 shadow-none">
             <h2 className="text-16 font-semibold">独立恢复验证</h2>
             <p className="text-13">
               <Stamp value={a.restore_test?.tested_at} /> · {a.restore_test?.result ?? "尚无记录"}
