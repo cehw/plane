@@ -50,9 +50,14 @@ export type HubSummary = {
       description: string;
       open: number;
       completed: number;
-      next: { id: string; name: string; state__name: string } | null;
+      next: { id: string; name: string; state__name: string; state__group: string } | null;
     }[];
-    project_progress: { project_id: string; project__name: string; open: number; completed: number }[];
+    project_progress: {
+      project_id: string;
+      project__name: string;
+      open: number;
+      completed: number;
+    }[];
   };
 };
 export type HubHealth = { label: string; tone: "good" | "warn" | "bad" | "muted"; detail: string };
@@ -79,7 +84,8 @@ export function snapshotIsStale(snapshot: HubSnapshot | null, now = Date.now()):
 
 export function collectorHealth(snapshot: HubSnapshot | null, now = Date.now()): HubHealth {
   if (!snapshot) return { label: "等待同步", tone: "muted", detail: "尚未接收到 Climet3 状态" };
-  if (snapshotIsStale(snapshot, now)) return { label: "状态已过期", tone: "warn", detail: "无法确认当前运行情况" };
+  if (snapshotIsStale(snapshot, now))
+    return { label: "状态已过期", tone: "warn", detail: "无法确认当前运行情况" };
   if (snapshot.netatmo.service !== "active")
     return { label: "需要检查", tone: "bad", detail: `服务：${snapshot.netatmo.service}` };
   const age = ageMinutes(snapshot.netatmo.collector.last_observation_utc, now);
@@ -112,7 +118,9 @@ export function backupHealth(snapshot: HubSnapshot | null, now = Date.now()): Hu
 export function latestRecords(records: HubRecord[]): HubRecord[] {
   // ES2022 target: sort a copy to preserve shared snapshot order.
   // oxlint-disable-next-line unicorn/no-array-sort
-  return [...records].sort((a, b) => b.end.localeCompare(a.end) || b.start.localeCompare(a.start)).slice(0, 5);
+  return [...records]
+    .sort((a, b) => b.end.localeCompare(a.end) || b.start.localeCompare(a.start))
+    .slice(0, 5);
 }
 
 export function completionPercent(completed: number, total: number): number | null {
@@ -129,4 +137,21 @@ export function eventTime(value?: string | null): string {
     minute: "2-digit",
     hour12: false,
   });
+}
+
+export function featuredProjects(projects: HubSummary["plane"]["portfolio"], records: HubRecord[]) {
+  const recent = new Map<string, string>();
+  for (const record of records) {
+    if (record.end > (recent.get(record.project) ?? "")) recent.set(record.project, record.end);
+  }
+  // ES2022 target; filter creates a new array before sorting.
+  // oxlint-disable-next-line unicorn/no-array-sort
+  return projects
+    .filter((p) => p.open + p.completed > 0)
+    .sort(
+      (a, b) =>
+        Number(b.next?.state__group === "started") - Number(a.next?.state__group === "started") ||
+        (recent.get(b.name) ?? "").localeCompare(recent.get(a.name) ?? ""),
+    )
+    .slice(0, 4);
 }

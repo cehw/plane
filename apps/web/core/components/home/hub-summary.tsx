@@ -1,13 +1,26 @@
-import { Activity, ArrowUpRight, CircleAlert, ClipboardList, RefreshCw, ShieldCheck } from "lucide-react";
+import {
+  Activity,
+  ArrowUpRight,
+  CircleAlert,
+  ClipboardList,
+  RefreshCw,
+  ShieldCheck,
+} from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import useSWR from "swr";
 import { HubSummaryService } from "@/services/hub-summary.service";
-import { ageLabel, backupHealth, collectorHealth, latestRecords, snapshotIsStale } from "./hub-summary.helpers";
+import {
+  ageLabel,
+  backupHealth,
+  collectorHealth,
+  latestRecords,
+  snapshotIsStale,
+} from "./hub-summary.helpers";
 import type { HubHealth } from "./hub-summary.helpers";
 
 import { HubPortfolio } from "./hub-portfolio";
 import { eventTime } from "./hub-summary.helpers";
-import { HubTasks } from "./hub-tasks";
+import { HubTasks, HubProjectProgress } from "./hub-tasks";
 
 const service = new HubSummaryService();
 const number = (value?: number) => (value === undefined ? "—" : value.toLocaleString("zh-CN"));
@@ -60,7 +73,8 @@ function Metric({
       <p className="mt-2 text-12 leading-relaxed text-secondary">{detail}</p>
     </>
   );
-  const cls = "min-w-0 rounded-xl border border-subtle bg-surface-1 p-4 transition-colors hover:bg-surface-2";
+  const cls =
+    "min-w-0 rounded-xl border border-subtle bg-surface-1 p-4 transition-colors hover:bg-surface-2";
   return href ? (
     <a href={href} className={cls}>
       {body}
@@ -74,17 +88,23 @@ export function HubSummaryPanel({ workspaceSlug }: { workspaceSlug: string }) {
   const { data, error, isLoading, isValidating, mutate } = useSWR(
     `hub-summary:${workspaceSlug}`,
     () => service.getSummary(workspaceSlug),
-    { refreshInterval: 60000 }
+    { refreshInterval: 60000 },
   );
   if (isLoading)
     return (
-      <div className="rounded-xl border border-subtle bg-surface-1 p-6 text-secondary" role="status">
+      <div
+        className="rounded-xl border border-subtle bg-surface-1 p-6 text-secondary"
+        role="status"
+      >
         正在读取工作与数据状态…
       </div>
     );
   if (!data)
     return (
-      <div className="flex items-center justify-between rounded-xl border border-subtle p-5" role="alert">
+      <div
+        className="flex items-center justify-between rounded-xl border border-subtle p-5"
+        role="alert"
+      >
         <p className="text-secondary">首页摘要暂时无法读取，请稍后重试。</p>
         <button type="button" className="text-accent-primary" onClick={() => void mutate()}>
           重试
@@ -103,8 +123,12 @@ export function HubSummaryPanel({ workspaceSlug }: { workspaceSlug: string }) {
     ...(error ? ["最新刷新失败，下面保留上次读到的状态。"] : []),
     ...(data.snapshot_error ? [data.snapshot_error] : []),
     ...(snapshot && stale ? ["Climet3 状态超过 90 分钟未同步，卡片中的数字是最后一次记录。"] : []),
-    ...(collector.tone === "bad" || (!stale && collector.label === "观测延迟") ? [collector.detail] : []),
-    ...(backup.tone === "bad" || (!stale && backup.label === "备份延迟") ? [`${backup.label} · ${backup.detail}`] : []),
+    ...(collector.tone === "bad" || (!stale && collector.label === "观测延迟")
+      ? [collector.detail]
+      : []),
+    ...(backup.tone === "bad" || (!stale && backup.label === "备份延迟")
+      ? [`${backup.label} · ${backup.detail}`]
+      : []),
   ];
   return (
     <section className="space-y-5" aria-label="状态与待办">
@@ -138,7 +162,10 @@ export function HubSummaryPanel({ workspaceSlug }: { workspaceSlug: string }) {
           ))}
         </div>
       )}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4" data-testid="hub-metrics">
+      <div
+        className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4"
+        data-testid="hub-metrics"
+      >
         <Metric
           icon={Activity}
           title="Netatmo · 最近采集"
@@ -158,7 +185,9 @@ export function HubSummaryPanel({ workspaceSlug }: { workspaceSlug: string }) {
           indicator
           value={eventTime(netatmo?.backup?.completed_utc)}
           detail={
-            backup.tone === "good" ? ageLabel(netatmo?.backup?.completed_utc) : `${backup.label} · ${backup.detail}`
+            backup.tone === "good"
+              ? ageLabel(netatmo?.backup?.completed_utc)
+              : `${backup.label} · ${backup.detail}`
           }
           tone={backup.tone}
           href={dataUrl}
@@ -185,6 +214,11 @@ export function HubSummaryPanel({ workspaceSlug }: { workspaceSlug: string }) {
           href={`/${workspaceSlug}/projects/`}
         />
       </div>
+      <HubProjectProgress
+        workspaceSlug={workspaceSlug}
+        plane={data.plane}
+        records={data.work_records}
+      />
       <HubPortfolio workspaceSlug={workspaceSlug} projects={data.plane.portfolio} />
       <HubTasks
         workspaceSlug={workspaceSlug}
@@ -214,7 +248,9 @@ export function HubSummaryPanel({ workspaceSlug }: { workspaceSlug: string }) {
                     <span>{record.project}</span>
                     <span>·</span>
                     <time>{record.end}</time>
-                    <span className="rounded bg-surface-2 px-1.5 text-secondary">{record.kind}</span>
+                    <span className="rounded bg-surface-2 px-1.5 text-secondary">
+                      {record.kind}
+                    </span>
                   </div>
                   <p className="text-13 leading-relaxed text-primary">{record.title}</p>
                 </li>
@@ -238,7 +274,9 @@ export function HubSummaryPanel({ workspaceSlug }: { workspaceSlug: string }) {
               <p className="text-12 text-secondary">{netatmo.archive.known_gap}</p>
             </>
           ) : (
-            <p className="text-12 text-tertiary">{netatmo ? "暂无已记录的数据缺口" : "等待数据状态同步"}</p>
+            <p className="text-12 text-tertiary">
+              {netatmo ? "暂无已记录的数据缺口" : "等待数据状态同步"}
+            </p>
           )}
           {dataUrl && (
             <a href={dataUrl} className="inline-block text-12 text-accent-primary">

@@ -54,3 +54,28 @@ test("empty task set is not falsely complete", async () => {
   assert.equal(completionPercent(1, 4), 25);
   assert.equal(completionPercent(4, 4), 100);
 });
+
+test("featured progress prioritizes active projects then recent records, limits to four and excludes empty projects", async () => {
+  const { featuredProjects } = await import("../hub-summary.helpers.ts");
+  const projects = [
+    { id: "old", name: "Old", open: 1, completed: 0, next: null },
+    { id: "empty", name: "Empty", open: 0, completed: 0, next: null },
+    { id: "recent", name: "Recent", open: 1, completed: 1, next: null },
+    { id: "active", name: "Active", open: 1, completed: 0, next: { state__group: "started" } },
+    { id: "done", name: "Done", open: 0, completed: 2, next: null },
+    { id: "older", name: "Older", open: 1, completed: 0, next: null },
+  ];
+  const records = [
+    { project: "Old", end: "2026-10-01" },
+    { project: "Recent", end: "2026-11-01" },
+    { project: "Recent", end: "2026-09-01" },
+    { project: "Done", end: "2026-10-20" },
+    { project: "Empty", end: "2026-11-02" },
+  ];
+  assert.deepEqual(
+    featuredProjects(projects, records).map((p) => p.id),
+    ["active", "recent", "done", "old"],
+  );
+  assert.equal(projects[0].id, "old");
+  assert.deepEqual(featuredProjects([], []), []);
+});

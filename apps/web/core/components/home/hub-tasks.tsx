@@ -1,10 +1,18 @@
 import { useState } from "react";
 import { ChartNoAxesColumnIncreasing, Circle, Plus, ListTodo } from "lucide-react";
 import { CreateUpdateIssueModal } from "@/components/issues/issue-modal/modal";
-import { completionPercent } from "./hub-summary.helpers";
-import type { HubSummary } from "./hub-summary.helpers";
+import { completionPercent, featuredProjects } from "./hub-summary.helpers";
+import type { HubSummary, HubRecord } from "./hub-summary.helpers";
 
-function Progress({ completed, total, label }: { completed: number; total: number; label: string }) {
+function Progress({
+  completed,
+  total,
+  label,
+}: {
+  completed: number;
+  total: number;
+  label: string;
+}) {
   const percent = completionPercent(completed, total);
   return (
     <div className="space-y-2">
@@ -21,11 +29,59 @@ function Progress({ completed, total, label }: { completed: number; total: numbe
         aria-valuemax={100}
         aria-valuenow={percent ?? undefined}
         aria-valuetext={percent === null ? "暂无任务" : `${completed} / ${total} 项已完成`}
-        className="h-2 overflow-hidden rounded-full bg-surface-2"
+        className="h-2 overflow-hidden rounded-full bg-surface-1 border border-subtle"
       >
-        <div className="h-full rounded-full bg-accent-primary transition-all" style={{ width: `${percent ?? 0}%` }} />
+        <div
+          className="h-full rounded-full bg-accent-primary transition-all"
+          style={{ width: `${percent ?? 0}%` }}
+        />
       </div>
     </div>
+  );
+}
+
+export function HubProjectProgress({
+  workspaceSlug,
+  plane,
+  records,
+}: {
+  workspaceSlug: string;
+  plane: HubSummary["plane"];
+  records: HubRecord[];
+}) {
+  const projects = featuredProjects(plane.portfolio, records);
+  return (
+    <section className="rounded-xl border border-subtle bg-surface-1 p-4" aria-label="近期项目进度">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <h3 className="flex items-center gap-2 text-14 font-semibold text-primary">
+          <ChartNoAxesColumnIncreasing size={16} />
+          近期项目进度
+        </h3>
+        <a href={`/${workspaceSlug}/projects/`} className="text-12 text-accent-primary">
+          全部项目 ↗
+        </a>
+      </div>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        {projects.map((p) => (
+          <a
+            key={p.id}
+            href={`/${workspaceSlug}/projects/${p.id}/issues/`}
+            className="min-w-0 rounded-lg bg-surface-2 p-3 hover:bg-surface-3"
+          >
+            <Progress label={p.name} completed={p.completed} total={p.completed + p.open} />
+            <p className="mt-2 truncate text-11 text-tertiary">
+              {p.next ? `${p.next.state__name} · ${p.next.name}` : "当前任务已完成"}
+            </p>
+          </a>
+        ))}
+      </div>
+      {!projects.length && (
+        <p className="text-13 text-tertiary">暂无项目任务，建立任务后即可跟踪进度。</p>
+      )}
+      <p className="mt-3 text-11 text-tertiary">
+        进行中的项目优先，其余按最近工作记录选取 · 完成率仅统计 Plane 中的有效任务
+      </p>
+    </section>
   );
 }
 
@@ -47,32 +103,9 @@ export function HubTasks({
         onSubmit={onRefresh}
         fetchIssueDetails={false}
       />
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
+      <div className="min-w-0">
         <section
-          className="min-w-0 space-y-4 rounded-xl border border-subtle bg-surface-1 p-4 lg:col-span-2"
-          aria-label="任务完成进度"
-        >
-          <h3 className="flex items-center gap-2 text-14 font-semibold text-primary">
-            <ChartNoAxesColumnIncreasing size={16} />
-            任务进度
-          </h3>
-          <Progress label="工作区总体完成率" completed={plane.completed} total={plane.total} />
-          <p className="text-12 text-tertiary">
-            {plane.completed} 已完成 · {plane.in_progress} 进行中 · {plane.open - plane.in_progress} 待开始
-          </p>
-          <div className="space-y-4 border-t border-subtle pt-4">
-            {plane.project_progress
-              .filter((p) => p.open + p.completed > 0)
-              .map((p) => (
-                <a key={p.project_id} href={`/${workspaceSlug}/projects/${p.project_id}/issues/`} className="block">
-                  <Progress label={p.project__name} completed={p.completed} total={p.completed + p.open} />
-                </a>
-              ))}
-          </div>
-          <p className="text-11 leading-relaxed text-tertiary">按有效任务的完成数量计算；取消、归档和草稿不计入。</p>
-        </section>
-        <section
-          className="min-w-0 rounded-xl border border-subtle bg-surface-1 p-4 lg:col-span-3"
+          className="min-w-0 rounded-xl border border-subtle bg-surface-1 p-4"
           aria-label="工作区待办"
         >
           <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
@@ -116,8 +149,12 @@ export function HubTasks({
           ) : (
             <div className="rounded-lg bg-surface-2 px-4 py-6 text-center">
               <ListTodo size={24} className="mx-auto mb-2 text-tertiary" />
-              <p className="text-13 text-secondary">{plane.total ? "当前任务已全部完成" : "还没有当前待办"}</p>
-              <p className="mt-2 text-12 text-tertiary">点击“新建任务”开始安排下一步，历史工作日志不会自动变成待办。</p>
+              <p className="text-13 text-secondary">
+                {plane.total ? "当前任务已全部完成" : "还没有当前待办"}
+              </p>
+              <p className="mt-2 text-12 text-tertiary">
+                点击“新建任务”开始安排下一步，历史工作日志不会自动变成待办。
+              </p>
             </div>
           )}
           <p className="mt-3 text-11 text-tertiary">
