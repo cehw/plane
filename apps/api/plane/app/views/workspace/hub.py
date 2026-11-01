@@ -56,11 +56,21 @@ class HubSummaryEndpoint(BaseAPIView):
             open=Count("id", filter=Q(state__group__in=OPEN_GROUPS)),
             completed=Count("id", filter=Q(state__group="completed")),
         ).order_by("project__name", "project_id"))
+        progress_by_id = {str(item["project_id"]): item for item in project_progress}
+        next_by_project = {}
+        for item in issues.filter(state__group__in=OPEN_GROUPS).order_by(F("target_date").asc(nulls_last=True), "created_at", "id").values("id", "name", "project_id", "state__name"):
+            next_by_project.setdefault(str(item["project_id"]), item)
+        portfolio = []
+        for project in projects.order_by("name"):
+            counts = progress_by_id.get(str(project.id), {"open": 0, "completed": 0})
+            portfolio.append({"id": str(project.id), "name": project.name, "description": project.description,
+                              "open": counts["open"], "completed": counts["completed"],
+                              "next": next_by_project.get(str(project.id))})
         return Response({
             "snapshot": document.get("snapshot"),
             "snapshot_error": error,
             "work_records": document.get("work_records", []),
             "work_records_updated_at": document.get("work_records_updated_at"),
             "workdesk_url": document.get("workdesk_url"),
-            "plane": {"projects": projects.count(), **stats, "todos": todos, "project_progress": project_progress},
+            "plane": {"projects": projects.count(), **stats, "todos": todos, "project_progress": project_progress, "portfolio": portfolio},
         }, headers={"Cache-Control": "private, no-store"})

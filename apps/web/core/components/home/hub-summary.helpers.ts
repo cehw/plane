@@ -44,6 +44,14 @@ export type HubSummary = {
       priority: string;
       target_date: string | null;
     }[];
+    portfolio: {
+      id: string;
+      name: string;
+      description: string;
+      open: number;
+      completed: number;
+      next: { id: string; name: string; state__name: string } | null;
+    }[];
     project_progress: { project_id: string; project__name: string; open: number; completed: number }[];
   };
 };
@@ -109,4 +117,16 @@ export function latestRecords(records: HubRecord[]): HubRecord[] {
 
 export function completionPercent(completed: number, total: number): number | null {
   return total > 0 ? Math.round((completed / total) * 100) : null;
+}
+
+export function eventTime(value?: string | null): string {
+  if (!value || !Number.isFinite(Date.parse(value))) return "暂无记录";
+  return new Date(value).toLocaleString("zh-CN", {
+    timeZone: "Asia/Taipei",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
 }

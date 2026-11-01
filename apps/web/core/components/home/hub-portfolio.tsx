@@ -1,0 +1,58 @@
+import { FolderKanban, ArrowUpRight } from "lucide-react";
+import type { HubSummary } from "./hub-summary.helpers";
+
+export function HubPortfolio({
+  workspaceSlug,
+  projects,
+}: {
+  workspaceSlug: string;
+  projects: HubSummary["plane"]["portfolio"];
+}) {
+  return (
+    <section className="rounded-xl border border-subtle bg-surface-1 p-4" aria-label="各项目进展与下一步">
+      <h3 className="mb-4 flex items-center gap-2 text-14 font-semibold text-primary">
+        <FolderKanban size={16} />
+        各项目进展与下一步 <span className="text-tertiary">{projects.length}</span>
+      </h3>
+      <div className="hidden grid-cols-12 gap-4 border-b border-subtle pb-2 text-11 text-tertiary md:grid">
+        <span className="col-span-2">项目</span>
+        <span className="col-span-6">最新已确认进展 · 记录时间</span>
+        <span className="col-span-4">下一步</span>
+      </div>
+      <div className="divide-y divide-subtle">
+        {projects.map((project) => (
+          <div key={project.id} className="grid grid-cols-1 gap-2 py-3 md:grid-cols-12 md:gap-4">
+            <a
+              href={`/${workspaceSlug}/projects/${project.id}/issues/`}
+              className="flex items-start gap-1 text-13 font-medium text-primary md:col-span-2"
+            >
+              {project.name}
+              <ArrowUpRight size={13} className="mt-1 shrink-0 text-tertiary" />
+            </a>
+            <p className="text-12 leading-relaxed text-secondary md:col-span-6">
+              {project.description || "尚无进展摘要"}
+            </p>
+            <div className="text-12 md:col-span-4">
+              {project.next ? (
+                <a
+                  href={`/${workspaceSlug}/projects/${project.id}/issues/${project.next.id}/`}
+                  className="text-accent-primary"
+                >
+                  <span className="mb-1 inline-block rounded bg-surface-2 px-1.5 py-0.5 text-11 text-secondary">
+                    {project.next.state__name}
+                  </span>
+                  <p>{project.next.name}</p>
+                  {project.open > 1 && (
+                    <span className="mt-1 block text-11 text-tertiary">另有 {project.open - 1} 项，进入项目查看</span>
+                  )}
+                </a>
+              ) : (
+                <span className="text-tertiary">未记录新的待办</span>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}

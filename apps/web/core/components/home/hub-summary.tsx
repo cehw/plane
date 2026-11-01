@@ -5,6 +5,8 @@ import { HubSummaryService } from "@/services/hub-summary.service";
 import { ageLabel, backupHealth, collectorHealth, latestRecords, snapshotIsStale } from "./hub-summary.helpers";
 import type { HubHealth } from "./hub-summary.helpers";
 
+import { HubPortfolio } from "./hub-portfolio";
+import { eventTime } from "./hub-summary.helpers";
 import { HubTasks } from "./hub-tasks";
 
 const service = new HubSummaryService();
@@ -23,6 +25,7 @@ function Metric({
   detail,
   tone = "muted",
   href,
+  indicator = false,
 }: {
   icon: LucideIcon;
   title: string;
@@ -30,6 +33,7 @@ function Metric({
   detail: string;
   tone?: HubHealth["tone"];
   href?: string;
+  indicator?: boolean;
 }) {
   const body = (
     <>
@@ -39,7 +43,15 @@ function Metric({
         </span>
         {href && <ArrowUpRight className="text-tertiary" size={15} aria-hidden="true" />}
       </div>
-      <p className="text-13 text-tertiary">{title}</p>
+      <p className="flex items-center gap-2 text-13 text-tertiary">
+        {indicator && (
+          <span
+            className={`h-2 w-2 shrink-0 rounded-full ${tone === "good" ? "bg-success-primary" : tone === "bad" ? "bg-danger-primary" : "bg-warning-primary"}`}
+            aria-label={tone === "good" ? "正常" : "需要关注"}
+          />
+        )}
+        {title}
+      </p>
       <p
         className={`mt-1 text-24 leading-tight font-semibold tracking-tight ${tone === "muted" ? "text-primary" : tones[tone]}`}
       >
@@ -129,17 +141,25 @@ export function HubSummaryPanel({ workspaceSlug }: { workspaceSlug: string }) {
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4" data-testid="hub-metrics">
         <Metric
           icon={Activity}
-          title="Climet3 · 采集状态"
-          value={collector.label}
-          detail={collector.detail}
+          title="Netatmo · 最近采集"
+          indicator
+          value={eventTime(netatmo?.collector.last_observation_utc)}
+          detail={
+            collector.tone === "good"
+              ? ageLabel(netatmo?.collector.last_observation_utc)
+              : `${collector.label} · ${collector.detail}`
+          }
           tone={collector.tone}
           href={dataUrl}
         />
         <Metric
           icon={ShieldCheck}
-          title="NAS · 关键数据备份"
-          value={backup.label}
-          detail={backup.detail}
+          title="NAS · 最近备份"
+          indicator
+          value={eventTime(netatmo?.backup?.completed_utc)}
+          detail={
+            backup.tone === "good" ? ageLabel(netatmo?.backup?.completed_utc) : `${backup.label} · ${backup.detail}`
+          }
           tone={backup.tone}
           href={dataUrl}
         />
@@ -165,6 +185,7 @@ export function HubSummaryPanel({ workspaceSlug }: { workspaceSlug: string }) {
           href={`/${workspaceSlug}/projects/`}
         />
       </div>
+      <HubPortfolio workspaceSlug={workspaceSlug} projects={data.plane.portfolio} />
       <HubTasks
         workspaceSlug={workspaceSlug}
         plane={data.plane}
