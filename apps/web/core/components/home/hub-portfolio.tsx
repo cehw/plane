@@ -9,10 +9,13 @@ export function HubPortfolio({
   projects: HubSummary["plane"]["portfolio"];
 }) {
   return (
-    <section className="rounded-xl border border-subtle bg-surface-1 p-4" aria-label="各项目进展与下一步">
+    <section
+      className="rounded-xl border border-subtle bg-surface-1 p-4"
+      aria-label="项目看板与下一步"
+    >
       <h3 className="mb-4 flex items-center gap-2 text-14 font-semibold text-primary">
         <FolderKanban size={16} />
-        各项目进展与下一步 <span className="text-tertiary">{projects.length}</span>
+        项目看板与下一步 <span className="text-tertiary">{projects.length}</span>
       </h3>
       <div className="hidden grid-cols-12 gap-4 border-b border-subtle pb-2 text-11 text-tertiary md:grid">
         <span className="col-span-2">项目</span>
@@ -26,7 +29,10 @@ export function HubPortfolio({
               href={`/${workspaceSlug}/projects/${project.id}/issues/`}
               className="flex items-start gap-1 text-13 font-medium text-primary md:col-span-2"
             >
-              {project.name}
+              <span>
+                {project.name}
+                <span className="mt-1 block text-11 text-accent-primary">打开看板</span>
+              </span>
               <ArrowUpRight size={13} className="mt-1 shrink-0 text-tertiary" />
             </a>
             <p className="text-12 leading-relaxed text-secondary md:col-span-6">
@@ -43,7 +49,9 @@ export function HubPortfolio({
                   </span>
                   <p>{project.next.name}</p>
                   {project.open > 1 && (
-                    <span className="mt-1 block text-11 text-tertiary">另有 {project.open - 1} 项，进入项目查看</span>
+                    <span className="mt-1 block text-11 text-tertiary">
+                      另有 {project.open - 1} 项，进入项目查看
+                    </span>
                   )}
                 </a>
               ) : (

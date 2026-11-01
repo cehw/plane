@@ -79,3 +79,14 @@ test("featured progress prioritizes active projects then recent records, limits 
   assert.equal(projects[0].id, "old");
   assert.deepEqual(featuredProjects([], []), []);
 });
+
+
+test("waiting for feedback does not outrank actively progressing work", async () => {
+  const { featuredProjects } = await import("../hub-summary.helpers.ts");
+  const projects = [
+    { id: "waiting", name: "Waiting", open: 1, completed: 0, next: { state__group: "started", state__name: "等待反馈" } },
+    { id: "active", name: "Active", open: 1, completed: 0, next: { state__group: "started", state__name: "进行中" } },
+  ];
+  const records = [{ project: "Waiting", end: "2026-11-01" }];
+  assert.equal(featuredProjects(projects, records)[0].id, "active");
+});

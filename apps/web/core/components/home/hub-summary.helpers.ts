@@ -30,6 +30,7 @@ export type HubSummary = {
     projects: number;
     open: number;
     in_progress: number;
+    waiting_feedback: number;
     overdue: number;
     completed: number;
     total: number;
@@ -150,7 +151,8 @@ export function featuredProjects(projects: HubSummary["plane"]["portfolio"], rec
     .filter((p) => p.open + p.completed > 0)
     .sort(
       (a, b) =>
-        Number(b.next?.state__group === "started") - Number(a.next?.state__group === "started") ||
+        Number(b.next?.state__group === "started" && b.next?.state__name !== "等待反馈") -
+          Number(a.next?.state__group === "started" && a.next?.state__name !== "等待反馈") ||
         (recent.get(b.name) ?? "").localeCompare(recent.get(a.name) ?? ""),
     )
     .slice(0, 4);

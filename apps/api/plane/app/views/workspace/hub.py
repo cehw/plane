@@ -29,7 +29,8 @@ def task_summary(issues):
     counts = issues.aggregate(
         open=Count("id", filter=Q(state__group__in=OPEN_GROUPS)),
         completed=Count("id", filter=Q(state__group="completed")),
-        in_progress=Count("id", filter=Q(state__group="started")),
+        in_progress=Count("id", filter=Q(state__group="started") & ~Q(state__name="等待反馈")),
+        waiting_feedback=Count("id", filter=Q(state__name="等待反馈")),
         overdue=Count("id", filter=Q(state__group__in=OPEN_GROUPS, target_date__lt=timezone.localdate())),
     )
     counts["total"] = counts["open"] + counts["completed"]

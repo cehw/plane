@@ -196,7 +196,7 @@ export function HubSummaryPanel({ workspaceSlug }: { workspaceSlug: string }) {
           icon={ClipboardList}
           title="正在推进"
           value={`${number(data.plane.in_progress)} 项`}
-          detail={`${data.plane.open - data.plane.in_progress} 项待开始`}
+          detail={`${data.plane.open - data.plane.in_progress - data.plane.waiting_feedback} 项待办 · ${data.plane.waiting_feedback} 项等待反馈`}
           href={`/${workspaceSlug}/projects/`}
         />
         <Metric

@@ -58,7 +58,7 @@ export function HubProjectProgress({
           近期项目进度
         </h3>
         <a href={`/${workspaceSlug}/projects/`} className="text-12 text-accent-primary">
-          全部项目 ↗
+          全部项目看板 ↗
         </a>
       </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -70,7 +70,7 @@ export function HubProjectProgress({
           >
             <Progress label={p.name} completed={p.completed} total={p.completed + p.open} />
             <p className="mt-2 truncate text-11 text-tertiary">
-              {p.next ? `${p.next.state__name} · ${p.next.name}` : "当前任务已完成"}
+              {p.next ? `${p.next.state__name} · ${p.next.name}` : "未记录新的待办"}
             </p>
           </a>
         ))}
@@ -79,7 +79,7 @@ export function HubProjectProgress({
         <p className="text-13 text-tertiary">暂无项目任务，建立任务后即可跟踪进度。</p>
       )}
       <p className="mt-3 text-11 text-tertiary">
-        进行中的项目优先，其余按最近工作记录选取 · 完成率仅统计 Plane 中的有效任务
+        点击进度卡打开原生看板 · 完成率为已录入事项（含历史成果）的完成比例，不代表整个项目完成度
       </p>
     </section>
   );
@@ -111,7 +111,7 @@ export function HubTasks({
           <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
             <h3 className="flex items-center gap-2 text-14 font-semibold text-primary">
               <ListTodo size={16} />
-              待办事项 <span className="text-tertiary">{plane.open}</span>
+              未完成事项 <span className="text-tertiary">{plane.open}</span>
             </h3>
             <button
               type="button"
