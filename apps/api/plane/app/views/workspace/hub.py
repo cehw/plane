@@ -58,7 +58,7 @@ class HubSummaryEndpoint(BaseAPIView):
         ).order_by("project__name", "project_id"))
         progress_by_id = {str(item["project_id"]): item for item in project_progress}
         next_by_project = {}
-        for item in issues.filter(state__group__in=OPEN_GROUPS).order_by(F("target_date").asc(nulls_last=True), "created_at", "id").values("id", "name", "project_id", "state__name"):
+        for item in issues.filter(state__group__in=OPEN_GROUPS).order_by(F("target_date").asc(nulls_last=True), "created_at", "id").values("id", "name", "project_id", "state__name", "state__group"):
             next_by_project.setdefault(str(item["project_id"]), item)
         portfolio = []
         for project in projects.order_by("name"):
@@ -66,6 +66,7 @@ class HubSummaryEndpoint(BaseAPIView):
             portfolio.append({"id": str(project.id), "name": project.name, "description": project.description,
                               "open": counts["open"], "completed": counts["completed"],
                               "next": next_by_project.get(str(project.id))})
+        portfolio.sort(key=lambda p: (not (p["next"] and p["next"]["state__group"] == "started"), not p["open"], p["name"]))
         return Response({
             "snapshot": document.get("snapshot"),
             "snapshot_error": error,
