@@ -1,3 +1,4 @@
+import { HubAppearanceSwitch } from "@/components/appearance/hub-appearance-switch";
 import type { ReactNode } from "react";
 import { HubOnlineCollection } from "./hub-online-collection";
 import { NasCapacity } from "./hub-nas-capacity";
@@ -139,16 +140,23 @@ export function HubSummaryPanel({ workspaceSlug }: { workspaceSlug: string }) {
           <h2 className="text-20 font-semibold text-primary">状态与待办</h2>
           <p className="mt-1 text-12 text-tertiary">运行状态、项目进度与下一步</p>
         </div>
-        <button
-          type="button"
-          onClick={() => void mutate()}
-          disabled={isValidating}
-          className="flex items-center gap-2 text-12 text-secondary"
-          aria-label="刷新概览"
-        >
-          <RefreshCw size={14} className={isValidating ? "animate-spin" : ""} aria-hidden="true" />
-          {snapshot ? `源状态 ${ageLabel(snapshot.generated_at)}` : "等待首次同步"}
-        </button>
+        <div className="flex flex-wrap items-center gap-4">
+          <HubAppearanceSwitch />
+          <button
+            type="button"
+            onClick={() => void mutate()}
+            disabled={isValidating}
+            className="flex items-center gap-2 text-12 text-secondary"
+            aria-label="刷新概览"
+          >
+            <RefreshCw
+              size={14}
+              className={isValidating ? "animate-spin" : ""}
+              aria-hidden="true"
+            />
+            {snapshot ? `源状态 ${ageLabel(snapshot.generated_at)}` : "等待首次同步"}
+          </button>
+        </div>
       </div>
       {alerts.length > 0 && (
         <div

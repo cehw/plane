@@ -11,6 +11,7 @@ import { useParams } from "next/navigation";
 import { useTheme } from "next-themes";
 // helpers
 import { applyCustomTheme, clearCustomTheme } from "@plane/utils";
+import { applyWarmWhitePalette } from "@/components/appearance/hub-appearance.helpers";
 // hooks
 import { useAppTheme } from "@/hooks/store/use-app-theme";
 import { useRouterParams } from "@/hooks/store/use-router-params";
@@ -90,8 +91,18 @@ function StoreWrapper(props: TStoreWrapper) {
     const themeData = userProfile?.theme;
 
     // Apply custom theme if current theme is custom
-    if (currentTheme === "custom" && themeData.primary && themeData.background && themeData.darkPalette !== undefined) {
-      applyCustomTheme(themeData.primary, themeData.background, themeData.darkPalette ? "dark" : "light");
+    if (
+      currentTheme === "custom" &&
+      themeData.primary &&
+      themeData.background &&
+      themeData.darkPalette !== undefined
+    ) {
+      applyCustomTheme(
+        themeData.primary,
+        themeData.background,
+        themeData.darkPalette ? "dark" : "light",
+      );
+      applyWarmWhitePalette(themeData);
     }
     // Clear custom theme CSS when switching away from custom
     else if (previousTheme === "custom" && currentTheme !== "custom") {

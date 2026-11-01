@@ -1,3 +1,4 @@
+import { HubAppearanceSwitch } from "@/components/appearance/hub-appearance-switch";
 import { ShieldCheck, RefreshCw } from "lucide-react";
 import useSWR from "swr";
 import { Card } from "@plane/propel/card";
@@ -56,15 +57,18 @@ export function HubDataAssets({ workspaceSlug }: { workspaceSlug: string }) {
             在线采集 · Climet3 数据与计算 · HD6500 NAS 备份
           </p>
         </div>
-        <Button
-          variant="secondary"
-          size="sm"
-          prependIcon={<RefreshCw />}
-          disabled={isValidating}
-          onClick={() => void mutate()}
-        >
-          刷新状态
-        </Button>
+        <div className="flex flex-wrap items-center gap-3">
+          <HubAppearanceSwitch />
+          <Button
+            variant="secondary"
+            size="sm"
+            prependIcon={<RefreshCw />}
+            disabled={isValidating}
+            onClick={() => void mutate()}
+          >
+            刷新状态
+          </Button>
+        </div>
       </div>
       <p className="text-12 text-tertiary">
         源状态：

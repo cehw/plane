@@ -15,6 +15,7 @@ import { setPromiseToast } from "@plane/propel/toast";
 import { applyCustomTheme } from "@plane/utils";
 // components
 import { CustomThemeSelector } from "@/components/core/theme/custom-theme-selector";
+import { HubAppearanceSwitch } from "./hub-appearance-switch";
 import { ThemeSwitch } from "@/components/core/theme/theme-switch";
 import { SettingsControlItem } from "@/components/settings/control-item";
 // hooks
@@ -55,7 +56,7 @@ export const ThemeSwitcher = observer(function ThemeSwitcher(props: {
           applyCustomTheme(
             userProfile.theme.primary,
             userProfile.theme.background,
-            userProfile.theme.darkPalette ? "dark" : "light"
+            userProfile.theme.darkPalette ? "dark" : "light",
           );
         }
 
@@ -78,13 +79,18 @@ export const ThemeSwitcher = observer(function ThemeSwitcher(props: {
         console.error("Error updating theme:", error);
       }
     },
-    [setTheme, updateUserTheme, userProfile]
+    [setTheme, updateUserTheme, userProfile],
   );
 
   if (!userProfile) return null;
 
   return (
     <>
+      <SettingsControlItem
+        title="快捷外观"
+        description="暖白、浅色或深色，保存到当前账户。"
+        control={<HubAppearanceSwitch />}
+      />
       <SettingsControlItem
         title={t(props.option.title)}
         description={t(props.option.description)}
