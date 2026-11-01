@@ -15,6 +15,7 @@ import {
   formatCount,
 } from "./hub-summary.helpers";
 import { Metric } from "./hub-summary";
+import { NasCapacity, NasVolumeCapacity } from "./hub-nas-capacity";
 import { HubCoverage } from "./hub-coverage";
 
 const service = new HubSummaryService();
@@ -99,16 +100,18 @@ export function HubDataAssets({ workspaceSlug }: { workspaceSlug: string }) {
           }
           tone={b.tone}
           indicator
-        />
+        >
+          <NasCapacity share={a.nas_share} />
+        </Metric>
       </div>
       <Tabs defaultValue="assets">
         <Tabs.List>
-          <Tabs.Trigger value="assets">资产与完整性</Tabs.Trigger>
-          <Tabs.Trigger value="coverage">站点覆盖</Tabs.Trigger>
+          <Tabs.Trigger value="assets">数据总览</Tabs.Trigger>
           <Tabs.Trigger value="backup">备份与恢复</Tabs.Trigger>
           <Tabs.Indicator />
         </Tabs.List>
         <Tabs.Content value="assets" className="space-y-5 pt-5">
+          <HubCoverage snapshot={s} storage />
           <Table>
             <TableHeader>
               <TableRow>
@@ -157,7 +160,7 @@ export function HubDataAssets({ workspaceSlug }: { workspaceSlug: string }) {
               </TableRow>
             </TableBody>
           </Table>
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-4">
             <Card>
               <h2 className="text-16 font-semibold">采集进度</h2>
               <dl className="grid grid-cols-2 gap-3 text-13">
@@ -178,24 +181,14 @@ export function HubDataAssets({ workspaceSlug }: { workspaceSlug: string }) {
                 网格会动态细分，数量不代表全球覆盖百分比。
               </p>
             </Card>
-            <Card>
-              <h2 className="text-16 font-semibold">数据完整性</h2>
-              <Badge variant={a.archive.known_gap ? "warning" : "neutral"}>
-                {a.archive.known_gap ? "历史观测存在缺口" : "暂无已记录缺口"}
-              </Badge>
-              <p className="text-13 text-secondary">
-                {a.archive.known_gap ?? "以最新源状态为准。"}
-              </p>
-              <p className="text-12 text-tertiary">
-                备份保存已有观测，不会补回未采集的历史数据。CSV 容量不包含新增 SQLite 观测。
-              </p>
-            </Card>
           </div>
         </Tabs.Content>
-        <Tabs.Content value="coverage" className="space-y-5 pt-5">
-          <HubCoverage snapshot={s} />
-        </Tabs.Content>
         <Tabs.Content value="backup" className="space-y-5 pt-5">
+          <Card>
+            <h2 className="text-16 font-semibold">NAS 容量</h2>
+            <NasCapacity share={a.nas_share} />
+            <NasVolumeCapacity volume={a.nas_volume} />
+          </Card>
           <Card>
             <div className="flex items-center justify-between">
               <h2 className="text-16 font-semibold">NAS 备份回执</h2>

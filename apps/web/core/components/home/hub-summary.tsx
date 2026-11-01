@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+import { NasCapacity } from "./hub-nas-capacity";
 import {
   Activity,
   ArrowUpRight,
@@ -20,7 +22,6 @@ import type { HubHealth } from "./hub-summary.helpers";
 
 import { HubProjectNavigator } from "./hub-project-navigator";
 import { nativeViewUrl } from "./hub-summary.helpers";
-import { HubCoverage } from "./hub-coverage";
 import { HubPortfolio } from "./hub-portfolio";
 import { eventTime } from "./hub-summary.helpers";
 import { HubTasks, HubProjectProgress } from "./hub-tasks";
@@ -42,6 +43,7 @@ export function Metric({
   tone = "muted",
   href,
   indicator = false,
+  children,
 }: {
   icon: LucideIcon;
   title: string;
@@ -50,6 +52,7 @@ export function Metric({
   tone?: HubHealth["tone"];
   href?: string;
   indicator?: boolean;
+  children?: ReactNode;
 }) {
   const body = (
     <>
@@ -74,6 +77,7 @@ export function Metric({
         {value}
       </p>
       <p className="mt-2 text-12 leading-relaxed text-secondary">{detail}</p>
+      {children}
     </>
   );
   const cls =
@@ -194,7 +198,9 @@ export function HubSummaryPanel({ workspaceSlug }: { workspaceSlug: string }) {
           }
           tone={backup.tone}
           href={dataUrl}
-        />
+        >
+          <NasCapacity share={netatmo?.nas_share} compact />
+        </Metric>
         <Metric
           icon={ClipboardList}
           title="正在推进"
@@ -230,22 +236,6 @@ export function HubSummaryPanel({ workspaceSlug }: { workspaceSlug: string }) {
           await mutate();
         }}
       />
-      <section
-        className="space-y-4 rounded-xl border border-subtle bg-surface-1 p-4"
-        aria-label="站点覆盖、资产与存储"
-      >
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h3 className="text-16 font-semibold">站点覆盖 · 资产与存储</h3>
-          <a href={dataUrl} className="text-12 text-accent-primary">
-            数据资产详情 ↗
-          </a>
-        </div>
-        {snapshot ? (
-          <HubCoverage snapshot={snapshot} storage />
-        ) : (
-          <p className="text-13 text-tertiary">等待数据状态同步</p>
-        )}
-      </section>
       <details className="rounded-xl border border-subtle bg-surface-1 p-4">
         <summary className="cursor-pointer text-14 font-semibold">
           全部 {data.plane.projects} 个项目 · 进展与下一步

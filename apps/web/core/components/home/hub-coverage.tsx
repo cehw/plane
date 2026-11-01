@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Card } from "@plane/propel/card";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@plane/propel/table";
+import { NasCapacity, NasVolumeCapacity } from "./hub-nas-capacity";
 import { HubDataMap } from "./hub-data-map";
 import { countryGroups, countryName } from "./hub-coverage.helpers";
 import { formatCount, eventTime, backupHealth, snapshotIsStale } from "./hub-summary.helpers";
@@ -50,6 +51,8 @@ export function HubCoverage({
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Card>
             <h3 className="text-14 font-semibold">资产与存储</h3>
+            <NasCapacity share={a.nas_share} />
+            <NasVolumeCapacity volume={a.nas_volume} />
             <p className="text-13">
               {formatCount(a.archive.csv_files)} 个历史 CSV · {(a.archive.bytes / 1e9).toFixed(2)}{" "}
               GB

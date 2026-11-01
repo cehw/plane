@@ -6,12 +6,32 @@ export type HubRecord = {
   start: string;
   end: string;
 };
+export type NasShare = {
+  name: string;
+  scope: "shared_folder";
+  used: number;
+  total: number;
+  unit: "TB";
+  observed_at: string;
+  source: string;
+  refresh_mode: "manual";
+};
+export type NasVolume = {
+  name?: string;
+  used_bytes?: number;
+  total_bytes?: number;
+  free_bytes?: number;
+  observed_at?: string;
+  error?: string;
+};
 export type HubSnapshot = {
   generated_at: string;
   received_at?: string;
   hres?: { policy?: string; status?: string };
   netatmo: {
     service: string;
+    nas_share?: NasShare;
+    nas_volume?: NasVolume;
     recent_stations: number;
     recent_countries: number;
     combined_stations?: number;
@@ -223,4 +243,21 @@ export function nativeViewUrl(
 }
 export function formatCount(value?: number): string {
   return value === undefined ? "暂无记录" : value.toLocaleString("zh-CN");
+}
+
+export function capacityPercent(used?: number, total?: number): number | null {
+  if (
+    used === undefined ||
+    total === undefined ||
+    !Number.isFinite(used) ||
+    !Number.isFinite(total) ||
+    used < 0 ||
+    total <= 0
+  )
+    return null;
+  return (used / total) * 100;
+}
+export function capacityIsStale(value?: string, maxAge = 1440, now = Date.now()): boolean {
+  const age = ageMinutes(value, now);
+  return age === null || age > maxAge;
 }
