@@ -1,3 +1,5 @@
+import type { HkoCoverage } from "./hub-hko.helpers";
+
 export type HubRecord = {
   id: string;
   project: string;
@@ -38,7 +40,7 @@ export type OnlineCollector = {
 };
 export type HubSnapshot = {
   station_map?: { generated_at: string; points: [number, number, number, number | null][] };
-  online_collection?: { checked_at: string; items: OnlineCollector[] };
+  online_collection?: { checked_at: string; items: OnlineCollector[]; hko?: HkoCoverage };
   generated_at: string;
   received_at?: string;
   hres?: { policy?: string; status?: string };
