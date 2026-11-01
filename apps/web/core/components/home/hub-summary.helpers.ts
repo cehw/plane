@@ -8,15 +8,29 @@ export type HubRecord = {
 };
 export type HubSnapshot = {
   generated_at: string;
+  received_at?: string;
+  hres?: { policy?: string; status?: string };
   netatmo: {
     service: string;
     recent_stations: number;
     recent_countries: number;
+    combined_stations?: number;
+    legacy_reference_stations?: number;
+    overlap_stations?: number;
+    recent_module_observations?: number;
+    map_cells?: [number, number, number, number, number][];
+    countries?: [string, number, number, number][];
+    restore_test?: { tested_at?: string; result?: string; csv_rows?: number; sqlite_rows?: number };
     new_since_reference: number;
     collector: { last_observation_utc?: string; global_scan_complete?: boolean };
-    tiles: { successful: number; failed: number; pending: number };
+    tiles: { active?: number; successful: number; failed: number; pending: number };
     archive: { bytes: number; csv_files: number; known_gap?: string };
-    backup?: { completed_utc?: string; state?: string };
+    backup?: {
+      completed_utc?: string;
+      state?: string;
+      snapshot_cutoff_utc?: string;
+      destination?: string;
+    };
     backup_attempt?: { state?: string; started_utc?: string };
   };
 };
@@ -49,6 +63,9 @@ export type HubSummary = {
       id: string;
       name: string;
       description: string;
+      views?: { kanban?: string; gantt?: string };
+      dated: number;
+      undated: number;
       open: number;
       completed: number;
       next: { id: string; name: string; state__name: string; state__group: string } | null;
@@ -156,4 +173,18 @@ export function featuredProjects(projects: HubSummary["plane"]["portfolio"], rec
         (recent.get(b.name) ?? "").localeCompare(recent.get(a.name) ?? ""),
     )
     .slice(0, 4);
+}
+
+export function nativeViewUrl(
+  workspaceSlug: string,
+  project: { id: string; views?: { kanban?: string; gantt?: string } },
+  layout: "kanban" | "gantt",
+): string {
+  const viewId = project.views?.[layout];
+  return viewId
+    ? `/${workspaceSlug}/projects/${project.id}/views/${viewId}/`
+    : `/${workspaceSlug}/projects/${project.id}/issues/`;
+}
+export function formatCount(value?: number): string {
+  return value === undefined ? "暂无记录" : value.toLocaleString("zh-CN");
 }

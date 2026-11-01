@@ -1,0 +1,5 @@
+.hub-data-map .map-ocean{fill:var(--color-bg-surface-2,#18202b)}
+.hub-data-map .map-land{fill:#526071;stroke:#26313e;stroke-width:.5px;vector-effect:non-scaling-stroke}
+.hub-data-map .station-cell{opacity:.85}
+.hub-data-map .old{fill:#abb4c2}.hub-data-map .both{fill:#7797ed}.hub-data-map .new{fill:#3cdb9f}
+.hub-data-map svg{display:block;max-width:100%}

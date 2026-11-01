@@ -90,3 +90,18 @@ test("waiting for feedback does not outrank actively progressing work", async ()
   const records = [{ project: "Waiting", end: "2026-11-01" }];
   assert.equal(featuredProjects(projects, records)[0].id, "active");
 });
+
+test("native views retain separate board and timeline routes, with project fallback", async () => {
+  const { nativeViewUrl } = await import("../hub-summary.helpers.ts");
+  const project = { id: "p1", views: { kanban: "board1", gantt: "timeline1" } };
+  assert.equal(nativeViewUrl("hub", project, "kanban"), "/hub/projects/p1/views/board1/");
+  assert.equal(nativeViewUrl("hub", project, "gantt"), "/hub/projects/p1/views/timeline1/");
+  assert.equal(nativeViewUrl("hub", {id:"p2"}, "gantt"), "/hub/projects/p2/issues/");
+});
+
+test("missing asset counts remain unknown while measured zero is displayed", async () => {
+  const { formatCount } = await import("../hub-summary.helpers.ts");
+  assert.equal(formatCount(undefined), "暂无记录");
+  assert.equal(formatCount(0), "0");
+  assert.equal(formatCount(12345), "12,345");
+});

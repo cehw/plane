@@ -9,7 +9,7 @@ from rest_framework.response import Response
 
 from plane.app.permissions import ROLE, allow_permission
 from plane.app.views.base import BaseAPIView
-from plane.db.models import Issue, Project, ProjectMember
+from plane.db.models import Issue, Project, ProjectMember, IssueView
 
 
 def load_snapshot(slug):
@@ -61,11 +61,22 @@ class HubSummaryEndpoint(BaseAPIView):
         next_by_project = {}
         for item in issues.filter(state__group__in=OPEN_GROUPS).order_by(F("target_date").asc(nulls_last=True), "created_at", "id").values("id", "name", "project_id", "state__name", "state__group"):
             next_by_project.setdefault(str(item["project_id"]), item)
+        views_by_project = {}
+        for view in IssueView.objects.filter(project__in=projects, name__in=["项目看板", "项目时间轴"]).filter(Q(owned_by=request.user) | Q(access=1)):
+            layout = view.display_filters.get("layout")
+            if layout == "gantt_chart":
+                layout = "gantt"
+            if layout in ["kanban", "gantt"]:
+                views_by_project.setdefault(str(view.project_id), {})[layout] = str(view.id)
+        dated_by_project = {str(row["project_id"]): row["dated"] for row in issues.filter(state__group__in=OPEN_GROUPS + ["completed"]).values("project_id").annotate(dated=Count("id", filter=Q(start_date__isnull=False) | Q(target_date__isnull=False)))}
         portfolio = []
         for project in projects.order_by("name"):
             counts = progress_by_id.get(str(project.id), {"open": 0, "completed": 0})
             portfolio.append({"id": str(project.id), "name": project.name, "description": project.description,
                               "open": counts["open"], "completed": counts["completed"],
+                              "views": views_by_project.get(str(project.id), {}),
+                              "dated": dated_by_project.get(str(project.id), 0),
+                              "undated": counts["open"] + counts["completed"] - dated_by_project.get(str(project.id), 0),
                               "next": next_by_project.get(str(project.id))})
         portfolio.sort(key=lambda p: (not (p["next"] and p["next"]["state__group"] == "started"), not p["open"], p["name"]))
         return Response({

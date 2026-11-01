@@ -1,4 +1,5 @@
 import { FolderKanban, ArrowUpRight } from "lucide-react";
+import { nativeViewUrl } from "./hub-summary.helpers";
 import type { HubSummary } from "./hub-summary.helpers";
 
 export function HubPortfolio({
@@ -25,16 +26,26 @@ export function HubPortfolio({
       <div className="divide-y divide-subtle">
         {projects.map((project) => (
           <div key={project.id} className="grid grid-cols-1 gap-2 py-3 md:grid-cols-12 md:gap-4">
-            <a
-              href={`/${workspaceSlug}/projects/${project.id}/issues/`}
-              className="flex items-start gap-1 text-13 font-medium text-primary md:col-span-2"
-            >
-              <span>
-                {project.name}
-                <span className="mt-1 block text-11 text-accent-primary">打开看板</span>
-              </span>
-              <ArrowUpRight size={13} className="mt-1 shrink-0 text-tertiary" />
-            </a>
+            <div className="md:col-span-2">
+              <a
+                href={nativeViewUrl(workspaceSlug, project, "kanban")}
+                className="flex items-start gap-1 text-13 font-medium text-primary md:col-span-2"
+              >
+                <span>
+                  {project.name}
+                  <span className="mt-1 block text-11 text-accent-primary">打开看板</span>
+                </span>
+                <ArrowUpRight size={13} className="mt-1 shrink-0 text-tertiary" />
+              </a>
+              {project.views?.gantt && (
+                <a
+                  href={nativeViewUrl(workspaceSlug, project, "gantt")}
+                  className="mt-2 block text-11 text-accent-primary"
+                >
+                  时间轴 · {project.dated} 项有日期 ↗
+                </a>
+              )}
+            </div>
             <p className="text-12 leading-relaxed text-secondary md:col-span-6">
               {project.description || "尚无进展摘要"}
             </p>

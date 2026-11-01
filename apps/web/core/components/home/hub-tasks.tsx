@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { ChartNoAxesColumnIncreasing, Circle, Plus, ListTodo } from "lucide-react";
 import { CreateUpdateIssueModal } from "@/components/issues/issue-modal/modal";
-import { completionPercent, featuredProjects } from "./hub-summary.helpers";
+import { completionPercent, featuredProjects, nativeViewUrl } from "./hub-summary.helpers";
 import type { HubSummary, HubRecord } from "./hub-summary.helpers";
 
 function Progress({
@@ -65,7 +65,7 @@ export function HubProjectProgress({
         {projects.map((p) => (
           <a
             key={p.id}
-            href={`/${workspaceSlug}/projects/${p.id}/issues/`}
+            href={nativeViewUrl(workspaceSlug, p, "kanban")}
             className="min-w-0 rounded-lg bg-surface-2 p-3 hover:bg-surface-3"
           >
             <Progress label={p.name} completed={p.completed} total={p.completed + p.open} />

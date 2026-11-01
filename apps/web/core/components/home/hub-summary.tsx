@@ -18,6 +18,8 @@ import {
 } from "./hub-summary.helpers";
 import type { HubHealth } from "./hub-summary.helpers";
 
+import { HubProjectNavigator } from "./hub-project-navigator";
+import { nativeViewUrl } from "./hub-summary.helpers";
 import { HubPortfolio } from "./hub-portfolio";
 import { eventTime } from "./hub-summary.helpers";
 import { HubTasks, HubProjectProgress } from "./hub-tasks";
@@ -31,7 +33,7 @@ const tones = {
   muted: "text-tertiary",
 };
 
-function Metric({
+export function Metric({
   icon: Icon,
   title,
   value,
@@ -116,8 +118,8 @@ export function HubSummaryPanel({ workspaceSlug }: { workspaceSlug: string }) {
   const collector = collectorHealth(snapshot);
   const backup = backupHealth(snapshot);
   const stale = snapshotIsStale(snapshot);
-  const root = data.workdesk_url?.replace(/\/$/, "");
-  const dataUrl = root ? `${root}/data` : undefined;
+  const dataUrl = `/${workspaceSlug}/data/`;
+  const timelineProject = data.plane.portfolio.find((p) => p.dated > 0 && p.views?.gantt);
   const records = latestRecords(data.work_records);
   const alerts = [
     ...(error ? ["最新刷新失败，下面保留上次读到的状态。"] : []),
@@ -214,6 +216,7 @@ export function HubSummaryPanel({ workspaceSlug }: { workspaceSlug: string }) {
           href={`/${workspaceSlug}/projects/`}
         />
       </div>
+      <HubProjectNavigator workspaceSlug={workspaceSlug} projects={data.plane.portfolio} />
       <HubProjectProgress
         workspaceSlug={workspaceSlug}
         plane={data.plane}
@@ -234,9 +237,12 @@ export function HubSummaryPanel({ workspaceSlug }: { workspaceSlug: string }) {
               <ClipboardList size={16} aria-hidden="true" />
               最近工作进展
             </h3>
-            {root && (
-              <a href={root} className="shrink-0 text-12 text-accent-primary">
-                全部记录 ↗
+            {timelineProject && (
+              <a
+                href={nativeViewUrl(workspaceSlug, timelineProject, "gantt")}
+                className="shrink-0 text-12 text-accent-primary"
+              >
+                原生时间轴 ↗
               </a>
             )}
           </div>

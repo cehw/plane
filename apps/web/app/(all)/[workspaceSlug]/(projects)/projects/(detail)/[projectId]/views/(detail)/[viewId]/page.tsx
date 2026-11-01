@@ -4,6 +4,8 @@
  * See the LICENSE file for details.
  */
 
+import { HubProjectNavigator } from "@/components/home/hub-project-navigator";
+import { HubSummaryService } from "@/services/hub-summary.service";
 import { observer } from "mobx-react";
 import useSWR from "swr";
 // assets
@@ -18,10 +20,13 @@ import { useProjectView } from "@/hooks/store/use-project-view";
 import { useAppRouter } from "@/hooks/use-app-router";
 import type { Route } from "./+types/page";
 
+const hubService = new HubSummaryService();
+
 function ProjectViewIssuesPage({ params }: Route.ComponentProps) {
   // router
   const router = useAppRouter();
   const { workspaceSlug, projectId, viewId } = params;
+  const { data: hub } = useSWR(`hub-summary:${workspaceSlug}`, () => hubService.getSummary(workspaceSlug));
   // store hooks
   const { fetchViewDetails, getViewById } = useProjectView();
   const { getProjectById } = useProject();
@@ -49,7 +54,11 @@ function ProjectViewIssuesPage({ params }: Route.ComponentProps) {
   return (
     <>
       <PageHead title={pageTitle} />
-      <ProjectViewLayoutRoot />
+      <div className="flex h-full min-h-0 flex-col">
+        {hub && <HubProjectNavigator workspaceSlug={workspaceSlug} projects={hub.plane.portfolio} projectId={projectId} viewId={viewId} key={projectId} />}
+        {projectView?.name === "项目时间轴" && <p className="px-4 py-2 text-11 text-tertiary">历史成果按来源日期定位；单日记录不代表全天工时，历史结束日不代表新截止日。未定日期的任务仍可在左侧查看。</p>}
+        <div className="min-h-0 flex-1"><ProjectViewLayoutRoot /></div>
+      </div>
     </>
   );
 }
