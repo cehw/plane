@@ -47,3 +47,10 @@ test("work history is sorted without interpreting historical kind as a current t
   );
   assert.equal(records[0].id, "old");
 });
+
+test("empty task set is not falsely complete", async () => {
+  const { completionPercent } = await import("../hub-summary.helpers.ts");
+  assert.equal(completionPercent(0, 0), null);
+  assert.equal(completionPercent(1, 4), 25);
+  assert.equal(completionPercent(4, 4), 100);
+});

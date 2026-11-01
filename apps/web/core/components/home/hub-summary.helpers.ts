@@ -26,7 +26,26 @@ export type HubSummary = {
   work_records: HubRecord[];
   work_records_updated_at: string | null;
   workdesk_url: string | null;
-  plane: { projects: number; open: number; in_progress: number; overdue: number };
+  plane: {
+    projects: number;
+    open: number;
+    in_progress: number;
+    overdue: number;
+    completed: number;
+    total: number;
+    todos: {
+      id: string;
+      name: string;
+      project_id: string;
+      project__identifier: string;
+      sequence_id: number;
+      state__name: string;
+      state__group: string;
+      priority: string;
+      target_date: string | null;
+    }[];
+    project_progress: { project_id: string; project__name: string; open: number; completed: number }[];
+  };
 };
 export type HubHealth = { label: string; tone: "good" | "warn" | "bad" | "muted"; detail: string };
 
@@ -52,8 +71,7 @@ export function snapshotIsStale(snapshot: HubSnapshot | null, now = Date.now()):
 
 export function collectorHealth(snapshot: HubSnapshot | null, now = Date.now()): HubHealth {
   if (!snapshot) return { label: "等待同步", tone: "muted", detail: "尚未接收到 Climet3 状态" };
-  if (snapshotIsStale(snapshot, now))
-    return { label: "状态已过期", tone: "warn", detail: "无法确认当前运行情况" };
+  if (snapshotIsStale(snapshot, now)) return { label: "状态已过期", tone: "warn", detail: "无法确认当前运行情况" };
   if (snapshot.netatmo.service !== "active")
     return { label: "需要检查", tone: "bad", detail: `服务：${snapshot.netatmo.service}` };
   const age = ageMinutes(snapshot.netatmo.collector.last_observation_utc, now);
@@ -84,7 +102,11 @@ export function backupHealth(snapshot: HubSnapshot | null, now = Date.now()): Hu
 }
 
 export function latestRecords(records: HubRecord[]): HubRecord[] {
-  return records
-    .toSorted((a, b) => b.end.localeCompare(a.end) || b.start.localeCompare(a.start))
-    .slice(0, 5);
+  // ES2022 target: sort a copy to preserve shared snapshot order.
+  // oxlint-disable-next-line unicorn/no-array-sort
+  return [...records].sort((a, b) => b.end.localeCompare(a.end) || b.start.localeCompare(a.start)).slice(0, 5);
+}
+
+export function completionPercent(completed: number, total: number): number | null {
+  return total > 0 ? Math.round((completed / total) * 100) : null;
 }
