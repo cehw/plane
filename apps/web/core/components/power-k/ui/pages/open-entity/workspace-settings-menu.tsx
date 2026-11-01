@@ -4,6 +4,7 @@
  * See the LICENSE file for details.
  */
 
+import { isCommunityWorkspaceSetting } from "@/helpers/community-settings";
 import { observer } from "mobx-react";
 // plane types
 import { EUserPermissionsLevel, WORKSPACE_SETTINGS } from "@plane/constants";
@@ -20,23 +21,36 @@ type Props = {
   handleSelect: (href: string) => void;
 };
 
-export const PowerKOpenWorkspaceSettingsMenu = observer(function PowerKOpenWorkspaceSettingsMenu(props: Props) {
+export const PowerKOpenWorkspaceSettingsMenu = observer(function PowerKOpenWorkspaceSettingsMenu(
+  props: Props,
+) {
   const { context, handleSelect } = props;
   // plane hooks
   const { t } = useTranslation();
   // store hooks
   const { allowPermissions } = useUserPermissions();
   // derived values
-  const settingsList = Object.values(WORKSPACE_SETTINGS).filter(
-    (setting) =>
-      context.params.workspaceSlug &&
-      allowPermissions(setting.access, EUserPermissionsLevel.WORKSPACE, context.params.workspaceSlug?.toString())
-  );
+  const settingsList = Object.values(WORKSPACE_SETTINGS)
+    .filter(isCommunityWorkspaceSetting)
+    .filter(
+      (setting) =>
+        context.params.workspaceSlug &&
+        allowPermissions(
+          setting.access,
+          EUserPermissionsLevel.WORKSPACE,
+          context.params.workspaceSlug?.toString(),
+        ),
+    );
   const settingsListWithIcons = settingsList.map((setting) => ({
     ...setting,
     label: t(setting.i18n_label),
     icon: WORKSPACE_SETTINGS_ICONS[setting.key],
   }));
 
-  return <PowerKSettingsMenu settings={settingsListWithIcons} onSelect={(setting) => handleSelect(setting.href)} />;
+  return (
+    <PowerKSettingsMenu
+      settings={settingsListWithIcons}
+      onSelect={(setting) => handleSelect(setting.href)}
+    />
+  );
 });

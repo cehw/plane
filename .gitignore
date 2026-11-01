@@ -117,3 +117,8 @@ packages/i18n/src/types/keys.generated.ts
 
 # Local security notes (not for version control)
 /security/
+
+# Private local Hub runtime files and records
+/_tmp/
+/_trash/
+/docs/local-hub.md
