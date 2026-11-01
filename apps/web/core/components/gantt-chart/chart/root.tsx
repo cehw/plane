@@ -30,6 +30,7 @@ import { getNumberOfDaysBetweenTwoDates, monthView, quarterView, weekView } from
 type ChartViewRootProps = {
   border: boolean;
   title: string;
+  showDuration?: boolean;
   initialDate?: Date;
   loaderTitle: string;
   blockIds: string[];
@@ -63,6 +64,7 @@ export const ChartViewRoot = observer(function ChartViewRoot(props: ChartViewRoo
   const {
     border,
     title,
+    showDuration = true,
     initialDate,
     blockIds,
     loadMoreBlocks,
@@ -238,6 +240,7 @@ export const ChartViewRoot = observer(function ChartViewRoot(props: ChartViewRoo
         showAllBlocks={showAllBlocks}
         sidebarToRender={sidebarToRender}
         title={title}
+        showDuration={showDuration}
         updateCurrentViewRenderPayload={updateCurrentViewRenderPayload}
         quickAdd={quickAdd}
         updateBlockDates={updateBlockDates}

@@ -46,6 +46,11 @@ export interface IBaseTimelineStore {
   isDependencyEnabled: boolean;
   //
   setBlockIds: (ids: string[]) => void;
+  updateBlocks: (
+    getDataById: (id: string) => BlockData | undefined | null,
+    type?: EGanttBlockType,
+    index?: number,
+  ) => void;
   getBlockById: (blockId: string) => IGanttBlock;
   // computed functions
   getIsCurrentDependencyDragging: (blockId: string) => boolean;
@@ -59,9 +64,14 @@ export interface IBaseTimelineStore {
   getUpdatedPositionAfterDrag: (
     id: string,
     shouldUpdateHalfBlock: boolean,
-    ignoreDependencies?: boolean
+    ignoreDependencies?: boolean,
   ) => IBlockUpdateDependencyData[];
-  updateBlockPosition: (id: string, deltaLeft: number, deltaWidth: number, ignoreDependencies?: boolean) => void;
+  updateBlockPosition: (
+    id: string,
+    deltaLeft: number,
+    deltaWidth: number,
+    ignoreDependencies?: boolean,
+  ) => void;
   getNumberOfDaysFromPosition: (position: number | undefined) => number | undefined;
   setIsDragging: (isDragging: boolean) => void;
   initGantt: () => void;
@@ -188,7 +198,11 @@ export class BaseTimeLineStore implements IBaseTimelineStore {
    * @param getDataById
    * @returns
    */
-  updateBlocks(getDataById: (id: string) => BlockData | undefined | null, type?: EGanttBlockType, index?: number) {
+  updateBlocks(
+    getDataById: (id: string) => BlockData | undefined | null,
+    type?: EGanttBlockType,
+    index?: number,
+  ) {
     if (!this.blockIds || !Array.isArray(this.blockIds) || this.isDragging) return true;
 
     const updatedBlockMaps: { path: string[]; value: any }[] = [];
@@ -212,7 +226,10 @@ export class BaseTimeLineStore implements IBaseTimelineStore {
           project_id: blockData?.project_id,
         },
       };
-      if (this.currentViewData && (this.currentViewData?.data?.startDate || this.currentViewData?.data?.dayWidth)) {
+      if (
+        this.currentViewData &&
+        (this.currentViewData?.data?.startDate || this.currentViewData?.data?.dayWidth)
+      ) {
         block.position = getItemPositionWidth(this.currentViewData, block);
       }
 
@@ -305,13 +322,17 @@ export class BaseTimeLineStore implements IBaseTimelineStore {
     // If shouldUpdateHalfBlock or the start date is available then update start date
     if (shouldUpdateHalfBlock || currBlock.start_date) {
       updatePayload.start_date = renderFormattedPayloadDate(
-        getDateFromPositionOnGantt(currBlock.position.marginLeft, this.currentViewData)
+        getDateFromPositionOnGantt(currBlock.position.marginLeft, this.currentViewData),
       );
     }
     // If shouldUpdateHalfBlock or the target date is available then update target date
     if (shouldUpdateHalfBlock || currBlock.target_date) {
       updatePayload.target_date = renderFormattedPayloadDate(
-        getDateFromPositionOnGantt(currBlock.position.marginLeft + currBlock.position.width, this.currentViewData, -1)
+        getDateFromPositionOnGantt(
+          currBlock.position.marginLeft + currBlock.position.width,
+          this.currentViewData,
+          -1,
+        ),
       );
     }
 

@@ -1,6 +1,11 @@
 import type { HkoCoverage } from "./hub-hko.helpers";
 
 export type HubRecord = {
+  siteScope?: string;
+  detail?: string;
+  project_id?: string;
+  issue_id?: string;
+  page_id?: string;
   id: string;
   project: string;
   title: string;

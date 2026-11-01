@@ -3,7 +3,6 @@ import { ChartNoAxesColumnIncreasing, Circle, Plus, ListTodo } from "lucide-reac
 import { CreateUpdateIssueModal } from "@/components/issues/issue-modal/modal";
 import { Badge } from "@plane/propel/badge";
 import {
-  completionPercent,
   featuredProjects,
   nativeViewUrl,
   projectStatus,
@@ -11,43 +10,7 @@ import {
 } from "./hub-summary.helpers";
 import type { HubSummary, HubRecord } from "./hub-summary.helpers";
 
-function Progress({
-  completed,
-  total,
-  label,
-}: {
-  completed: number;
-  total: number;
-  label: string;
-}) {
-  const percent = completionPercent(completed, total);
-  return (
-    <div className="space-y-1">
-      <div className="flex items-center justify-between gap-3 text-12">
-        <span className="text-secondary">{label}</span>
-        <span className="shrink-0 text-primary">
-          {percent === null ? "暂无任务" : `${percent}% · ${completed}/${total}`}
-        </span>
-      </div>
-      <div
-        role="progressbar"
-        aria-label={label}
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-valuenow={percent ?? undefined}
-        aria-valuetext={percent === null ? "暂无任务" : `${completed} / ${total} 项已完成`}
-        className="h-1.5 overflow-hidden rounded-full bg-surface-1 border border-subtle"
-      >
-        <div
-          className="h-full rounded-full bg-accent-primary transition-all"
-          style={{ width: `${percent ?? 0}%` }}
-        />
-      </div>
-    </div>
-  );
-}
-
-export function HubProjectProgress({
+export function HubProjectNextSteps({
   workspaceSlug,
   plane,
   records,
@@ -98,7 +61,6 @@ export function HubProjectProgress({
               <span>· {p.open} 项未完成</span>
               {p.next?.target_date && <span>· 截止 {p.next.target_date}</span>}
             </div>
-            <Progress label="事项进度" completed={p.completed} total={p.completed + p.open} />
             <p className="mt-2 text-11 text-tertiary">下一步</p>
             {p.next ? (
               <a
@@ -121,7 +83,9 @@ export function HubProjectProgress({
       {!projects.length && (
         <p className="text-13 text-tertiary">暂无项目任务，建立任务后即可跟踪进度。</p>
       )}
-      <p className="mt-3 text-11 text-tertiary">优先显示需推进的项目；进度按已录入事项计算。</p>
+      <p className="mt-3 text-11 text-tertiary">
+        优先显示需推进的项目；状态与下一步来自当前 Plane 事项。
+      </p>
     </section>
   );
 }

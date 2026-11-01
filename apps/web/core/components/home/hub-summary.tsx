@@ -19,7 +19,7 @@ import { HubHomeTimeline } from "./hub-home-timeline";
 import { nativeViewUrl } from "./hub-summary.helpers";
 import { HubPortfolio } from "./hub-portfolio";
 import { eventTime } from "./hub-summary.helpers";
-import { HubTasks, HubProjectProgress } from "./hub-tasks";
+import { HubTasks, HubProjectNextSteps } from "./hub-tasks";
 
 const service = new HubSummaryService();
 const number = (value?: number) => (value === undefined ? "—" : value.toLocaleString("zh-CN"));
@@ -170,8 +170,12 @@ export function HubSummaryPanel({ workspaceSlug }: { workspaceSlug: string }) {
           ))}
         </div>
       )}
-      <HubHomeTimeline workspaceSlug={workspaceSlug} projects={data.plane.portfolio} />
-      <HubProjectProgress
+      <HubHomeTimeline
+        workspaceSlug={workspaceSlug}
+        projects={data.plane.portfolio}
+        records={data.work_records}
+      />
+      <HubProjectNextSteps
         workspaceSlug={workspaceSlug}
         plane={data.plane}
         records={data.work_records}

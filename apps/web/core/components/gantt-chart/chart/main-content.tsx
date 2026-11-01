@@ -18,7 +18,12 @@ import type {
 import { cn, getDate } from "@plane/utils";
 // components
 import { MultipleSelectGroup } from "@/components/core/multiple-select";
-import { GanttChartSidebar, MonthChartView, QuarterChartView, WeekChartView } from "@/components/gantt-chart";
+import {
+  GanttChartSidebar,
+  MonthChartView,
+  QuarterChartView,
+  WeekChartView,
+} from "@/components/gantt-chart";
 // helpers
 // hooks
 import { useTimeLineChartStore } from "@/hooks/use-timeline-chart";
@@ -50,10 +55,11 @@ type Props = {
   showAllBlocks: boolean;
   sidebarToRender: (props: any) => React.ReactNode;
   title: string;
+  showDuration?: boolean;
   updateCurrentViewRenderPayload: (
     direction: "left" | "right",
     currentView: TGanttViews,
-    targetDate?: Date
+    targetDate?: Date,
   ) => ChartDataType | undefined;
   quickAdd?: React.ReactNode | undefined;
   isEpic?: boolean;
@@ -77,6 +83,7 @@ export const GanttChartMainContent = observer(function GanttChartMainContent(pro
     showAllBlocks,
     sidebarToRender,
     title,
+    showDuration = true,
     canLoadMoreBlocks,
     updateCurrentViewRenderPayload,
     quickAdd,
@@ -101,7 +108,7 @@ export const GanttChartMainContent = observer(function GanttChartMainContent(pro
         element,
         getAllowedAxis: () => "vertical",
         canScroll: ({ source }) => source.data.dragInstanceId === "GANTT_REORDER",
-      })
+      }),
     );
     // oxlint-disable-next-line eslint-plugin-react-hooks/exhaustive-deps
   }, [ganttContainerRef?.current]);
@@ -140,7 +147,8 @@ export const GanttChartMainContent = observer(function GanttChartMainContent(pro
 
     setTimeout(() => {
       if (updatedPosition)
-        scrollContainer.scrollLeft = updatedPosition.marginLeft - 4 - (scrollToEndDate ? DEFAULT_BLOCK_WIDTH : 0);
+        scrollContainer.scrollLeft =
+          updatedPosition.marginLeft - 4 - (scrollToEndDate ? DEFAULT_BLOCK_WIDTH : 0);
     });
   };
 
@@ -174,7 +182,7 @@ export const GanttChartMainContent = observer(function GanttChartMainContent(pro
                 "vertical-scrollbar horizontal-scrollbar flex scrollbar-lg h-full w-full overflow-auto border-t-[0.5px] border-subtle",
                 {
                   "mb-8": bottomSpacing,
-                }
+                },
               )}
               ref={ganttContainerRef}
               onScroll={onScroll}
@@ -189,6 +197,7 @@ export const GanttChartMainContent = observer(function GanttChartMainContent(pro
                 enableSelection={enableSelection}
                 sidebarToRender={sidebarToRender}
                 title={title}
+                showDuration={showDuration}
                 selectionHelpers={helpers}
                 showAllBlocks={showAllBlocks}
                 isEpic={isEpic}

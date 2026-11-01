@@ -15,6 +15,7 @@ import { ChartViewRoot } from "./chart/root";
 type GanttChartRootProps = {
   border?: boolean;
   title: string;
+  showDuration?: boolean;
   initialDate?: Date;
   loaderTitle: string;
   blockIds: string[];
@@ -42,6 +43,7 @@ export const GanttChartRoot = observer(function GanttChartRoot(props: GanttChart
   const {
     border = true,
     title,
+    showDuration = true,
     initialDate,
     blockIds,
     loaderTitle = "blocks",
@@ -76,6 +78,7 @@ export const GanttChartRoot = observer(function GanttChartRoot(props: GanttChart
     <ChartViewRoot
       border={border}
       title={title}
+      showDuration={showDuration}
       initialDate={initialDate}
       blockIds={blockIds}
       loadMoreBlocks={loadMoreBlocks}

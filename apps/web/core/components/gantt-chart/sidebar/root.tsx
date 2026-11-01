@@ -28,6 +28,7 @@ type Props = {
   enableSelection: boolean | ((blockId: string) => boolean);
   sidebarToRender: (props: any) => React.ReactNode;
   title: string;
+  showDuration?: boolean;
   selectionHelpers: TSelectionHelper;
   showAllBlocks?: boolean;
   isEpic?: boolean;
@@ -45,6 +46,7 @@ export const GanttChartSidebar = observer(function GanttChartSidebar(props: Prop
     canLoadMoreBlocks,
     ganttContainerRef,
     title,
+    showDuration = true,
     selectionHelpers,
     showAllBlocks = false,
     isEpic = false,
@@ -76,7 +78,7 @@ export const GanttChartSidebar = observer(function GanttChartSidebar(props: Prop
                   "pointer-events-none size-3.5 opacity-0 !outline-none group-hover/list-header:pointer-events-auto group-hover/list-header:opacity-100",
                   {
                     "pointer-events-auto opacity-100": !isGroupSelectionEmpty,
-                  }
+                  },
                 )}
                 groupID={GANTT_SELECT_GROUP}
                 selectionHelpers={selectionHelpers}
@@ -85,7 +87,7 @@ export const GanttChartSidebar = observer(function GanttChartSidebar(props: Prop
           )}
           <h6>{title}</h6>
         </div>
-        <h6>{t("common.duration")}</h6>
+        {showDuration && <h6>{t("common.duration")}</h6>}
       </Row>
 
       <Row variant={ERowVariant.HUGGING} className="h-max min-h-full bg-surface-1">

@@ -11,10 +11,37 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 from rest_framework.test import APIRequestFactory, force_authenticate
-from plane.app.views.workspace.hub import HubSummaryEndpoint, load_snapshot, task_order
+from plane.app.views.workspace.hub import HubSummaryEndpoint, load_snapshot, task_order, enrich_work_records
 
 
 class HubSummaryTests(unittest.TestCase):
+    def test_history_retains_dates_kind_and_scope_and_links_renamed_project(self):
+        record = dict(id="old-1", project="Original", title="Observation", kind="进行中",
+                      start="2026-03-04", end="2026-03-08", siteScope="Site A", detail="Original notes")
+        projects = [dict(id="project-1", name="Renamed", external_id="Original",
+                         external_source="workdesk-2026-11")]
+        issues = [dict(id="issue-1", project_id="project-1", external_id="history:old-1")]
+        pages = [dict(page_id="page-1", project_id="project-1", page__external_id="history:Original")]
+        result = enrich_work_records([record, dict(record)], projects, issues, pages)
+        self.assertEqual(result, [{**record, "project_id": "project-1", "issue_id": "issue-1", "page_id": "page-1"}])
+        self.assertNotIn("project_id", record)
+
+    def test_history_omits_inaccessible_projects_and_never_cross_links_projects(self):
+        records = [dict(id="old-1", project="Visible", title="Known", kind="计划", start="", end=""),
+                   dict(id="private", project="Private", title="Hidden", kind="已做", start="", end="")]
+        projects = [dict(id="project-1", name="Visible", external_id=None, external_source=None)]
+        issues = [dict(id="wrong-issue", project_id="project-2", external_id="history:old-1")]
+        pages = [dict(page_id="wrong-page", project_id="project-2", page__external_id="history:Visible")]
+        self.assertEqual(enrich_work_records(records, projects, issues, pages),
+                         [{**records[0], "project_id": "project-1"}])
+
+    def test_history_uses_native_name_when_no_migration_alias_exists(self):
+        record = dict(id="new-1", project="Native", title="Report", kind="汇报",
+                      start="2026-10-31", end="2026-10-31")
+        projects = [dict(id="project-1", name="Native", external_id="Unrelated", external_source="another-import")]
+        self.assertEqual(enrich_work_records([record], projects, [], []),
+                         [{**record, "project_id": "project-1"}])
+
     def test_next_action_prioritizes_overdue_priority_and_active_work(self):
         today = date(2026, 11, 1)
         def item(id, priority, group="unstarted", due=None, name="待办"):

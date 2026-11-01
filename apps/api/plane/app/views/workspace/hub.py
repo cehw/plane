@@ -9,7 +9,7 @@ from rest_framework.response import Response
 
 from plane.app.permissions import ROLE, allow_permission
 from plane.app.views.base import BaseAPIView
-from plane.db.models import Issue, Project, ProjectMember, IssueView
+from plane.db.models import Issue, Project, ProjectMember, IssueView, Page, ProjectPage
 
 
 def load_snapshot(slug):
@@ -45,6 +45,37 @@ def task_summary(issues):
     return counts
 
 
+def enrich_work_records(records, projects, history_issues, history_pages):
+    """Link original workdesk dates to visible native objects without changing history."""
+    projects = list(projects)
+    by_name = {project["name"]: str(project["id"]) for project in projects}
+    # The migration source name survives a later rename of the native project.
+    by_name.update({project["external_id"]: str(project["id"]) for project in projects
+                    if project.get("external_source") == "workdesk-2026-11" and project.get("external_id")})
+    issue_ids = {(str(row["project_id"]), row["external_id"]): str(row["id"])
+                 for row in history_issues}
+    page_ids = {(str(row["project_id"]), row["page__external_id"]): str(row["page_id"])
+                for row in history_pages}
+    fields = ("id", "project", "title", "kind", "start", "end", "siteScope", "detail")
+    seen = set()
+    result = []
+    for record in records:
+        project_id = by_name.get(record["project"])
+        if not project_id or record["id"] in seen:
+            continue
+        seen.add(record["id"])
+        item = {key: record[key] for key in fields if key in record}
+        item["project_id"] = project_id
+        issue_id = issue_ids.get((project_id, "history:" + record["id"]))
+        page_id = page_ids.get((project_id, "history:" + record["project"]))
+        if issue_id:
+            item["issue_id"] = issue_id
+        if page_id:
+            item["page_id"] = page_id
+        result.append(item)
+    return result
+
+
 class HubSummaryEndpoint(BaseAPIView):
     @allow_permission([ROLE.ADMIN, ROLE.MEMBER], level="WORKSPACE")
     def get(self, request, slug):
@@ -56,6 +87,22 @@ class HubSummaryEndpoint(BaseAPIView):
             Q(network=2) | Q(id__in=memberships)
         )
         issues = Issue.issue_objects.filter(project__in=projects)
+        # Pages use 0 for shared access, unlike IssueView. Match the native
+        # Pages membership and ownership boundary before exposing a deep link.
+        history_pages = ProjectPage.objects.filter(
+            project__in=projects, project_id__in=memberships, deleted_at__isnull=True,
+            page__workspace__slug=slug, page__deleted_at__isnull=True,
+            page__archived_at__isnull=True, page__parent__isnull=True,
+            page__external_source="workdesk-2026-11",
+        ).filter(Q(page__owned_by=request.user) | Q(page__access=Page.PUBLIC_ACCESS)).values(
+            "project_id", "page_id", "page__external_id"
+        )
+        work_records = enrich_work_records(
+            document.get("work_records", []),
+            projects.values("id", "name", "external_id", "external_source"),
+            issues.filter(external_source="workdesk-history").values("id", "project_id", "external_id"),
+            history_pages,
+        )
         stats = task_summary(issues)
         open_tasks = list(issues.filter(state__group__in=OPEN_GROUPS).values(
             "id", "name", "project_id", "project__identifier", "sequence_id", "state__name",
@@ -101,7 +148,7 @@ class HubSummaryEndpoint(BaseAPIView):
         return Response({
             "snapshot": document.get("snapshot"),
             "snapshot_error": error,
-            "work_records": document.get("work_records", []),
+            "work_records": work_records,
             "work_records_updated_at": document.get("work_records_updated_at"),
             "workdesk_url": document.get("workdesk_url"),
             "plane": {"projects": projects.count(), **stats, "todos": todos, "project_progress": project_progress, "portfolio": portfolio},
