@@ -63,12 +63,22 @@ export type HubSummary = {
       id: string;
       name: string;
       description: string;
+      priority?: string;
+      in_progress?: number;
+      waiting_feedback?: number;
       views?: { kanban?: string; gantt?: string };
       dated: number;
       undated: number;
       open: number;
       completed: number;
-      next: { id: string; name: string; state__name: string; state__group: string } | null;
+      next: {
+        id: string;
+        name: string;
+        state__name: string;
+        state__group: string;
+        priority?: string;
+        target_date?: string | null;
+      } | null;
     }[];
     project_progress: {
       project_id: string;
@@ -157,20 +167,46 @@ export function eventTime(value?: string | null): string {
   });
 }
 
-export function featuredProjects(projects: HubSummary["plane"]["portfolio"], records: HubRecord[]) {
+export const priorityLabels: Record<string, string> = {
+  urgent: "紧急",
+  high: "高优先级",
+  medium: "中优先级",
+  low: "低优先级",
+  none: "未设优先级",
+};
+const priorityRank: Record<string, number> = { urgent: 0, high: 1, medium: 2, low: 3, none: 4 };
+export function projectStatus(p: HubSummary["plane"]["portfolio"][number]): string {
+  if (
+    (p.in_progress ?? 0) > 0 ||
+    (p.next?.state__group === "started" && p.next.state__name !== "等待反馈")
+  )
+    return "进行中";
+  if ((p.waiting_feedback ?? 0) > 0 || p.next?.state__name === "等待反馈") return "等待反馈";
+  return p.open ? "待办" : p.completed ? "已录入事项完成" : "暂无任务";
+}
+export function featuredProjects(
+  projects: HubSummary["plane"]["portfolio"],
+  records: HubRecord[],
+  today = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Taipei" }),
+) {
   const recent = new Map<string, string>();
   for (const record of records) {
     if (record.end > (recent.get(record.project) ?? "")) recent.set(record.project, record.end);
   }
-  // ES2022 target; filter creates a new array before sorting.
+  const overdue = (p: (typeof projects)[number]) =>
+    Boolean(p.open && p.next?.target_date && p.next.target_date < today);
   // oxlint-disable-next-line unicorn/no-array-sort
   return projects
     .filter((p) => p.open + p.completed > 0)
     .sort(
       (a, b) =>
-        Number(b.next?.state__group === "started" && b.next?.state__name !== "等待反馈") -
-          Number(a.next?.state__group === "started" && a.next?.state__name !== "等待反馈") ||
-        (recent.get(b.name) ?? "").localeCompare(recent.get(a.name) ?? ""),
+        Number(Boolean(b.open)) - Number(Boolean(a.open)) ||
+        Number(overdue(b)) - Number(overdue(a)) ||
+        (priorityRank[a.priority ?? "none"] ?? 4) - (priorityRank[b.priority ?? "none"] ?? 4) ||
+        Number(projectStatus(b) === "进行中") - Number(projectStatus(a) === "进行中") ||
+        (a.next?.target_date ?? "9999").localeCompare(b.next?.target_date ?? "9999") ||
+        (recent.get(b.name) ?? "").localeCompare(recent.get(a.name) ?? "") ||
+        a.name.localeCompare(b.name),
     )
     .slice(0, 4);
 }

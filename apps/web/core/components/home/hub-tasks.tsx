@@ -1,7 +1,14 @@
 import { useState } from "react";
 import { ChartNoAxesColumnIncreasing, Circle, Plus, ListTodo } from "lucide-react";
 import { CreateUpdateIssueModal } from "@/components/issues/issue-modal/modal";
-import { completionPercent, featuredProjects, nativeViewUrl } from "./hub-summary.helpers";
+import { Badge } from "@plane/propel/badge";
+import {
+  completionPercent,
+  featuredProjects,
+  nativeViewUrl,
+  projectStatus,
+  priorityLabels,
+} from "./hub-summary.helpers";
 import type { HubSummary, HubRecord } from "./hub-summary.helpers";
 
 function Progress({
@@ -51,11 +58,14 @@ export function HubProjectProgress({
 }) {
   const projects = featuredProjects(plane.portfolio, records);
   return (
-    <section className="rounded-xl border border-subtle bg-surface-1 p-4" aria-label="近期项目进度">
+    <section
+      className="rounded-xl border border-subtle bg-surface-1 p-4"
+      aria-label="重点项目与下一步"
+    >
       <div className="mb-3 flex items-center justify-between gap-3">
         <h3 className="flex items-center gap-2 text-14 font-semibold text-primary">
           <ChartNoAxesColumnIncreasing size={16} />
-          近期项目进度
+          重点项目与下一步
         </h3>
         <a href={`/${workspaceSlug}/projects/`} className="text-12 text-accent-primary">
           全部项目看板 ↗
@@ -63,23 +73,58 @@ export function HubProjectProgress({
       </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {projects.map((p) => (
-          <a
-            key={p.id}
-            href={nativeViewUrl(workspaceSlug, p, "kanban")}
-            className="min-w-0 rounded-lg bg-surface-2 p-3 hover:bg-surface-3"
-          >
-            <Progress label={p.name} completed={p.completed} total={p.completed + p.open} />
-            <p className="mt-2 truncate text-11 text-tertiary">
-              {p.next ? `${p.next.state__name} · ${p.next.name}` : "未记录新的待办"}
-            </p>
-          </a>
+          <article key={p.id} className="min-w-0 rounded-lg border border-subtle bg-surface-2 p-4">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+              <a
+                href={nativeViewUrl(workspaceSlug, p, "kanban")}
+                className="text-14 font-semibold text-primary hover:text-accent-primary"
+              >
+                {p.name}
+              </a>
+              <Badge
+                variant={
+                  projectStatus(p) === "进行中"
+                    ? "brand"
+                    : projectStatus(p) === "等待反馈"
+                      ? "warning"
+                      : "neutral"
+                }
+              >
+                {projectStatus(p)}
+              </Badge>
+            </div>
+            <div className="mb-3 flex flex-wrap gap-2 text-11 text-tertiary">
+              <span>{priorityLabels[p.priority ?? "none"] ?? "未设优先级"}</span>
+              <span>· {p.open} 项未完成</span>
+              {p.next?.target_date && <span>· 截止 {p.next.target_date}</span>}
+            </div>
+            <Progress label="已录入事项" completed={p.completed} total={p.completed + p.open} />
+            <p className="mt-4 text-11 text-tertiary">下一步</p>
+            {p.next ? (
+              <a
+                href={`/${workspaceSlug}/projects/${p.id}/issues/${p.next.id}/`}
+                className="mt-1 block break-words text-13 leading-relaxed text-primary hover:text-accent-primary"
+              >
+                {p.next.name}
+              </a>
+            ) : (
+              <p className="mt-1 text-13 text-tertiary">暂无未完成事项</p>
+            )}
+            <div className="mt-4 flex flex-wrap gap-4 text-12 text-accent-primary">
+              <a href={nativeViewUrl(workspaceSlug, p, "kanban")}>看板 ↗</a>
+              <a href={nativeViewUrl(workspaceSlug, p, "gantt")}>时间轴 ↗</a>
+              <span className="text-tertiary">
+                {p.dated} 项有日期 · {p.undated} 项未定日期
+              </span>
+            </div>
+          </article>
         ))}
       </div>
       {!projects.length && (
         <p className="text-13 text-tertiary">暂无项目任务，建立任务后即可跟踪进度。</p>
       )}
       <p className="mt-3 text-11 text-tertiary">
-        点击进度卡打开原生看板 · 完成率为已录入事项（含历史成果）的完成比例，不代表整个项目完成度
+        优先未完成项目：逾期 → 原生优先级 → 进行中 → 截止日 → 最近记录。进度仅代表已录入事项。
       </p>
     </section>
   );
@@ -111,7 +156,7 @@ export function HubTasks({
           <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
             <h3 className="flex items-center gap-2 text-14 font-semibold text-primary">
               <ListTodo size={16} />
-              未完成事项 <span className="text-tertiary">{plane.open}</span>
+              接下来要做 <span className="text-tertiary">{plane.open}</span>
             </h3>
             <button
               type="button"
@@ -138,7 +183,9 @@ export function HubTasks({
                         <span>
                           {todo.project__identifier}-{todo.sequence_id}
                         </span>
+                        <span>{plane.portfolio.find((p) => p.id === todo.project_id)?.name}</span>
                         <span>{todo.state__name}</span>
+                        <span>{priorityLabels[todo.priority] ?? "未设优先级"}</span>
                         <span>{todo.target_date ? `截止 ${todo.target_date}` : "未设截止日"}</span>
                       </p>
                     </div>
@@ -158,7 +205,7 @@ export function HubTasks({
             </div>
           )}
           <p className="mt-3 text-11 text-tertiary">
-            按截止日从近到远，无日期排后 · 显示前 8 项 · 点击任务进入原生页面更新状态
+            逾期 → 优先级 → 进行中 → 截止日 · 显示前 8 项 · 点击更新原生任务
           </p>
         </section>
       </div>

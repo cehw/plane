@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Activity, ShieldCheck, RefreshCw } from "lucide-react";
 import useSWR from "swr";
 import { Card } from "@plane/propel/card";
@@ -16,7 +15,7 @@ import {
   formatCount,
 } from "./hub-summary.helpers";
 import { Metric } from "./hub-summary";
-import { HubDataMap } from "./hub-data-map";
+import { HubCoverage } from "./hub-coverage";
 
 const service = new HubSummaryService();
 function Stamp({ value }: { value?: string }) {
@@ -29,7 +28,6 @@ function Stamp({ value }: { value?: string }) {
   );
 }
 export function HubDataAssets({ workspaceSlug }: { workspaceSlug: string }) {
-  const [countrySearch, setCountrySearch] = useState("");
   const { data, error, isValidating, mutate } = useSWR(
     `hub-data-assets:${workspaceSlug}`,
     () => service.getSummary(workspaceSlug),
@@ -49,8 +47,6 @@ export function HubDataAssets({ workspaceSlug }: { workspaceSlug: string }) {
   const c = collectorHealth(s);
   const b = backupHealth(s);
   const stale = snapshotIsStale(s);
-  const countries =
-    a.countries?.filter(([code]) => code.toLowerCase().includes(countrySearch.toLowerCase())) ?? [];
   return (
     <div className="mx-auto w-full max-w-6xl space-y-5 p-4 md:p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -197,73 +193,7 @@ export function HubDataAssets({ workspaceSlug }: { workspaceSlug: string }) {
           </div>
         </Tabs.Content>
         <Tabs.Content value="coverage" className="space-y-5 pt-5">
-          <div className="grid gap-3 sm:grid-cols-3">
-            {[
-              ["近 24 小时去重站点", a.recent_stations],
-              ["相对旧参考集新增", a.new_since_reference],
-              ["两批站点去重并集", a.combined_stations],
-            ].map(([title, value]) => (
-              <Card key={String(title)}>
-                <p className="text-12 text-tertiary">{title}</p>
-                <p className="text-24 font-semibold">
-                  {formatCount(typeof value === "number" ? value : undefined)}
-                </p>
-              </Card>
-            ))}
-          </div>
-          <p className="text-12 text-tertiary">
-            旧参考集 {formatCount(a.legacy_reference_stations)} + 近 24 小时{" "}
-            {formatCount(a.recent_stations)} − 交集 {formatCount(a.overlap_stations)} = 并集{" "}
-            {formatCount(a.combined_stations)}。这是已见站点，全球总站数仍未知。
-          </p>
-          <Card>
-            {a.map_cells ? (
-              <HubDataMap cells={a.map_cells} />
-            ) : (
-              <p role="status" className="text-13 text-tertiary">
-                覆盖格网等待下一次同步，不能当作零覆盖。
-              </p>
-            )}
-          </Card>
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-16 font-semibold">
-              国家 / 地区 · {formatCount(a.recent_countries)} 个近期代码
-            </h2>
-            <input
-              aria-label="筛选国家或地区代码"
-              placeholder="筛选国家 / 地区代码"
-              value={countrySearch}
-              onChange={(e) => setCountrySearch(e.target.value)}
-              className="rounded-md border border-subtle bg-surface-1 px-3 py-2 text-13"
-            />
-          </div>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>国家 / 地区代码</TableHead>
-                <TableHead>旧集独有</TableHead>
-                <TableHead>两者都有</TableHead>
-                <TableHead>近期新增</TableHead>
-                <TableHead>去重并集</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {countries.map(([code, old, both, fresh]) => (
-                <TableRow key={code}>
-                  <TableCell>{code}</TableCell>
-                  <TableCell>{formatCount(old)}</TableCell>
-                  <TableCell>{formatCount(both)}</TableCell>
-                  <TableCell>{formatCount(fresh)}</TableCell>
-                  <TableCell>{formatCount(old + both + fresh)}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-          {!a.countries && (
-            <p role="status" className="text-12 text-tertiary">
-              国家明细等待同步。
-            </p>
-          )}
+          <HubCoverage snapshot={s} />
         </Tabs.Content>
         <Tabs.Content value="backup" className="space-y-5 pt-5">
           <Card>

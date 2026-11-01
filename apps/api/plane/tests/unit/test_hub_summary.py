@@ -1,3 +1,4 @@
+from datetime import date, datetime
 import os
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "plane.settings.production")
 import django
@@ -10,10 +11,22 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 from rest_framework.test import APIRequestFactory, force_authenticate
-from plane.app.views.workspace.hub import HubSummaryEndpoint, load_snapshot
+from plane.app.views.workspace.hub import HubSummaryEndpoint, load_snapshot, task_order
 
 
 class HubSummaryTests(unittest.TestCase):
+    def test_next_action_prioritizes_overdue_priority_and_active_work(self):
+        today = date(2026, 11, 1)
+        def item(id, priority, group="unstarted", due=None, name="待办"):
+            return dict(id=id, priority=priority, state__group=group, state__name=name,
+                        target_date=due, created_at=datetime(2026, 10, 1))
+        rows = [item("low", "low"), item("high", "high"), item("urgent", "urgent"),
+                item("late", "low", due=date(2026, 10, 30)), item("active", "high", "started"),
+                item("waiting", "high", "started", name="等待反馈")]
+        self.assertEqual([r["id"] for r in sorted(rows, key=lambda r: task_order(r, today))],
+                         ["late", "urgent", "active", "high", "waiting", "low"])
+        self.assertIsNone(rows[0]["target_date"])
+
     def test_missing_snapshot_does_not_fabricate_healthy_data(self):
         with tempfile.TemporaryDirectory() as folder, patch.dict(os.environ, {"HUB_SNAPSHOT_DIR":folder}):
             data,error=load_snapshot("test-workspace")

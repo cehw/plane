@@ -3,7 +3,7 @@ import json
 import os
 from pathlib import Path
 
-from django.db.models import Count, Q, F
+from django.db.models import Count, Q
 from django.utils import timezone
 from rest_framework.response import Response
 
@@ -23,6 +23,14 @@ def load_snapshot(slug):
 
 
 OPEN_GROUPS = ["backlog", "unstarted", "started"]
+PRIORITY_ORDER = {"urgent": 0, "high": 1, "medium": 2, "low": 3, "none": 4}
+
+
+def task_order(item, today):
+    due = item.get("target_date")
+    active = item.get("state__group") == "started" and item.get("state__name") != "等待反馈"
+    return (not (due and due < today), PRIORITY_ORDER.get(item.get("priority"), 4),
+            not active, due is None, due or today, item["created_at"], str(item["id"]))
 
 
 def task_summary(issues):
@@ -49,18 +57,26 @@ class HubSummaryEndpoint(BaseAPIView):
         )
         issues = Issue.issue_objects.filter(project__in=projects)
         stats = task_summary(issues)
-        todos = list(issues.filter(state__group__in=OPEN_GROUPS).order_by(
-            F("target_date").asc(nulls_last=True), "created_at", "id"
-        ).values("id", "name", "project_id", "project__identifier", "sequence_id",
-                 "state__name", "state__group", "priority", "target_date")[:8])
+        open_tasks = list(issues.filter(state__group__in=OPEN_GROUPS).values(
+            "id", "name", "project_id", "project__identifier", "sequence_id", "state__name",
+            "state__group", "priority", "target_date", "created_at"))
+        open_tasks.sort(key=lambda item: task_order(item, timezone.localdate()))
+        todos = open_tasks[:8]
         project_progress = list(issues.values("project_id", "project__name").annotate(
             open=Count("id", filter=Q(state__group__in=OPEN_GROUPS)),
             completed=Count("id", filter=Q(state__group="completed")),
+            in_progress=Count("id", filter=Q(state__group="started") & ~Q(state__name="等待反馈")),
+            waiting_feedback=Count("id", filter=Q(state__name="等待反馈")),
         ).order_by("project__name", "project_id"))
         progress_by_id = {str(item["project_id"]): item for item in project_progress}
         next_by_project = {}
-        for item in issues.filter(state__group__in=OPEN_GROUPS).order_by(F("target_date").asc(nulls_last=True), "created_at", "id").values("id", "name", "project_id", "state__name", "state__group"):
-            next_by_project.setdefault(str(item["project_id"]), item)
+        priority_by_project = {}
+        for item in open_tasks:
+            project_id = str(item["project_id"])
+            next_by_project.setdefault(project_id, item)
+            priority = item["priority"]
+            if PRIORITY_ORDER.get(priority, 4) < PRIORITY_ORDER.get(priority_by_project.get(project_id), 5):
+                priority_by_project[project_id] = priority
         views_by_project = {}
         for view in IssueView.objects.filter(project__in=projects, name__in=["项目看板", "项目时间轴"]).filter(Q(owned_by=request.user) | Q(access=1)):
             layout = view.display_filters.get("layout")
@@ -74,6 +90,9 @@ class HubSummaryEndpoint(BaseAPIView):
             counts = progress_by_id.get(str(project.id), {"open": 0, "completed": 0})
             portfolio.append({"id": str(project.id), "name": project.name, "description": project.description,
                               "open": counts["open"], "completed": counts["completed"],
+                              "priority": priority_by_project.get(str(project.id), "none"),
+                              "in_progress": counts.get("in_progress", 0),
+                              "waiting_feedback": counts.get("waiting_feedback", 0),
                               "views": views_by_project.get(str(project.id), {}),
                               "dated": dated_by_project.get(str(project.id), 0),
                               "undated": counts["open"] + counts["completed"] - dated_by_project.get(str(project.id), 0),

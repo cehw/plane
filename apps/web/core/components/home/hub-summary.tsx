@@ -20,6 +20,7 @@ import type { HubHealth } from "./hub-summary.helpers";
 
 import { HubProjectNavigator } from "./hub-project-navigator";
 import { nativeViewUrl } from "./hub-summary.helpers";
+import { HubCoverage } from "./hub-coverage";
 import { HubPortfolio } from "./hub-portfolio";
 import { eventTime } from "./hub-summary.helpers";
 import { HubTasks, HubProjectProgress } from "./hub-tasks";
@@ -222,7 +223,6 @@ export function HubSummaryPanel({ workspaceSlug }: { workspaceSlug: string }) {
         plane={data.plane}
         records={data.work_records}
       />
-      <HubPortfolio workspaceSlug={workspaceSlug} projects={data.plane.portfolio} />
       <HubTasks
         workspaceSlug={workspaceSlug}
         plane={data.plane}
@@ -230,6 +230,30 @@ export function HubSummaryPanel({ workspaceSlug }: { workspaceSlug: string }) {
           await mutate();
         }}
       />
+      <section
+        className="space-y-4 rounded-xl border border-subtle bg-surface-1 p-4"
+        aria-label="站点覆盖、资产与存储"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h3 className="text-16 font-semibold">站点覆盖 · 资产与存储</h3>
+          <a href={dataUrl} className="text-12 text-accent-primary">
+            数据资产详情 ↗
+          </a>
+        </div>
+        {snapshot ? (
+          <HubCoverage snapshot={snapshot} storage />
+        ) : (
+          <p className="text-13 text-tertiary">等待数据状态同步</p>
+        )}
+      </section>
+      <details className="rounded-xl border border-subtle bg-surface-1 p-4">
+        <summary className="cursor-pointer text-14 font-semibold">
+          全部 {data.plane.projects} 个项目 · 进展与下一步
+        </summary>
+        <div className="mt-4">
+          <HubPortfolio workspaceSlug={workspaceSlug} projects={data.plane.portfolio} />
+        </div>
+      </details>
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
         <div className="min-w-0 rounded-xl border border-subtle bg-surface-1 p-4 lg:col-span-3">
           <div className="mb-3 flex items-center justify-between gap-3">

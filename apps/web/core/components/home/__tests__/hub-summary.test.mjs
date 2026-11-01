@@ -74,7 +74,7 @@ test("featured progress prioritizes active projects then recent records, limits 
   ];
   assert.deepEqual(
     featuredProjects(projects, records).map((p) => p.id),
-    ["active", "recent", "done", "old"],
+    ["active", "recent", "old", "older"],
   );
   assert.equal(projects[0].id, "old");
   assert.deepEqual(featuredProjects([], []), []);
@@ -104,4 +104,18 @@ test("missing asset counts remain unknown while measured zero is displayed", asy
   assert.equal(formatCount(undefined), "暂无记录");
   assert.equal(formatCount(0), "0");
   assert.equal(formatCount(12345), "12,345");
+});
+
+test("featured work honors overdue and native priority, keeping completed history behind open work", async () => {
+  const {featuredProjects} = await import("../hub-summary.helpers.ts");
+  const p=(id,priority,group="unstarted",due=null)=>({id,name:id,open:1,completed:0,priority,next:{state__group:group,target_date:due}});
+  const projects=[p("active","low","started"),p("high","high"),p("late","low","unstarted","2026-10-01"),p("urgent","urgent"),{...p("done","urgent"),open:0,completed:3,next:null}];
+  assert.deepEqual(featuredProjects(projects,[],"2026-11-01").map(p=>p.id),["late","urgent","high","active"]);
+  assert.equal(projects[0].id,"active");
+});
+test("project status uses all active tasks even if next task is unstarted", async () => {
+  const {projectStatus}=await import("../hub-summary.helpers.ts");
+  assert.equal(projectStatus({open:2,in_progress:1,next:{state__group:"unstarted"}}),"进行中");
+  assert.equal(projectStatus({open:1,in_progress:0,waiting_feedback:1}),"等待反馈");
+  assert.equal(projectStatus({open:0,completed:5}),"已录入事项完成");
 });
