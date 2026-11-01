@@ -1,5 +1,53 @@
-.hub-data-map .map-ocean{fill:var(--color-bg-surface-2,#18202b)}
-.hub-data-map .map-land{fill:#526071;stroke:#26313e;stroke-width:.5px;vector-effect:non-scaling-stroke}
-.hub-data-map .station-cell{opacity:.85}
-.hub-data-map .old{fill:#abb4c2}.hub-data-map .both{fill:#7797ed}.hub-data-map .new{fill:#3cdb9f}
-.hub-data-map svg{display:block;max-width:100%}
+.hub-data-map .hub-map-frame {
+  height: clamp(340px, 48vw, 560px);
+  width: 100%;
+  isolation: isolate;
+  border-radius: 8px;
+  background: #dbe5eb;
+  color: #17212b;
+}
+.hub-map-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.hub-map-toolbar button {
+  padding: 6px 12px;
+  border: 1px solid #526071;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.hub-map-toolbar button:hover,
+.hub-map-toolbar button[aria-pressed="true"] {
+  background: #2563eb;
+  color: white;
+}
+.hub-map-toolbar button:focus-visible {
+  outline: 2px solid #60a5fa;
+  outline-offset: 2px;
+}
+.hub-map-status {
+  margin-top: 10px;
+  font-size: 12px;
+}
+.hub-data-map .leaflet-container {
+  font-family: inherit;
+}
+.hub-data-map .leaflet-control-attribution {
+  background: rgba(255, 255, 255, 0.92);
+  color: #17212b;
+}
+.hub-data-map .leaflet-control-attribution a {
+  color: #075985;
+}
+.hub-data-map .leaflet-control-zoom a {
+  color: #17212b;
+  background: white;
+}
+.hub-data-map .hub-map-tooltip {
+  width: max-content;
+  max-width: min(420px, 75vw);
+  white-space: normal;
+}
