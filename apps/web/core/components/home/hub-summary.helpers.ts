@@ -24,7 +24,20 @@ export type NasVolume = {
   observed_at?: string;
   error?: string;
 };
+export type OnlineCollector = {
+  id: string;
+  name: string;
+  cadence: string;
+  max_age_minutes: number;
+  scheduled: boolean | null;
+  status: string;
+  time_label: string;
+  last_collected_at?: string;
+  last_observed_at?: string;
+  detail?: string;
+};
 export type HubSnapshot = {
+  online_collection?: { checked_at: string; items: OnlineCollector[] };
   generated_at: string;
   received_at?: string;
   hres?: { policy?: string; status?: string };
@@ -260,4 +273,73 @@ export function capacityPercent(used?: number, total?: number): number | null {
 export function capacityIsStale(value?: string, maxAge = 1440, now = Date.now()): boolean {
   const age = ageMinutes(value, now);
   return age === null || age > maxAge;
+}
+
+export function onlineCollectorHealth(
+  row: OnlineCollector,
+  checkedAt?: string,
+  now = Date.now(),
+): HubHealth {
+  const checkedAge = ageMinutes(checkedAt, now);
+  if (checkedAge === null || checkedAge > 90)
+    return { label: "状态待更新", tone: "warn", detail: "保留上次记录，无法确认当前情况" };
+  if (row.scheduled === false)
+    return { label: "调度未启用", tone: "warn", detail: "当前定时任务中未找到此采集器" };
+  if (row.scheduled === null)
+    return { label: "调度待核实", tone: "muted", detail: "未能读取定时任务状态" };
+  if (row.status === "failed")
+    return { label: "最近采集失败", tone: "bad", detail: row.detail ?? "最新输出未包含有效数据" };
+  if (row.status === "partial")
+    return { label: "部分采集缺失", tone: "warn", detail: row.detail ?? "最新输出不完整" };
+  // Evaluate the collector at the source check time: hourly dashboard sync is not a ten-minute collector outage.
+  const checkedNow = Date.parse(checkedAt!);
+  const age = ageMinutes(row.last_collected_at, checkedNow);
+  if (row.status !== "complete" || age === null)
+    return { label: "待核实", tone: "muted", detail: row.detail ?? "尚无可核实的采集时间" };
+  if (age > row.max_age_minutes)
+    return { label: "采集延迟", tone: "warn", detail: `超过 ${row.cadence} 对应的更新窗口` };
+  const observationAge = ageMinutes(row.last_observed_at, checkedNow);
+  if (observationAge !== null && observationAge > 60)
+    return { label: "观测延迟", tone: "warn", detail: "抓取有更新，但源观测已超过 1 小时" };
+  return { label: "正常", tone: "good", detail: row.detail ?? "最近输出已更新" };
+}
+
+export function onlineRows(snapshot: HubSnapshot | null, now = Date.now()) {
+  const netatmo = {
+    id: "netatmo",
+    name: "Netatmo · 全球观测",
+    cadence: "持续采集",
+    time_label: "最近观测",
+    last_collected_at: snapshot?.netatmo.collector.last_observation_utc,
+    detail: "全球观测、查询队列与失败网格重试",
+    health: collectorHealth(snapshot, now),
+  };
+  const collection = snapshot?.online_collection;
+  const rows = collection?.items.map((row) => ({
+    ...row,
+    health: onlineCollectorHealth(row, collection.checked_at, now),
+  })) ?? [
+    {
+      id: "hko",
+      name: "HKO · 站点观测",
+      cadence: "每 10 分钟",
+      time_label: "最近采集",
+      last_collected_at: undefined,
+      detail: "等待同步",
+      health: { label: "待核实", tone: "muted" as const, detail: "等待采集状态同步" },
+    },
+  ];
+  return [
+    netatmo,
+    ...rows,
+    {
+      id: "hres",
+      name: "HRES · 下载",
+      cadence: "周期待核实",
+      time_label: "最近下载",
+      last_collected_at: undefined,
+      detail: "",
+      health: { label: "未接入监控", tone: "muted" as const, detail: "尚无可核实的下载状态" },
+    },
+  ];
 }

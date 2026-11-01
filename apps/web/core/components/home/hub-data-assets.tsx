@@ -1,4 +1,4 @@
-import { Activity, ShieldCheck, RefreshCw } from "lucide-react";
+import { ShieldCheck, RefreshCw } from "lucide-react";
 import useSWR from "swr";
 import { Card } from "@plane/propel/card";
 import { Badge } from "@plane/propel/badge";
@@ -9,13 +9,13 @@ import { HubSummaryService } from "@/services/hub-summary.service";
 import {
   ageLabel,
   eventTime,
-  collectorHealth,
   backupHealth,
   snapshotIsStale,
   formatCount,
 } from "./hub-summary.helpers";
 import { Metric } from "./hub-summary";
 import { NasCapacity, NasVolumeCapacity } from "./hub-nas-capacity";
+import { HubOnlineCollection } from "./hub-online-collection";
 import { HubCoverage } from "./hub-coverage";
 
 const service = new HubSummaryService();
@@ -45,7 +45,6 @@ export function HubDataAssets({ workspaceSlug }: { workspaceSlug: string }) {
       </div>
     );
   const a = s.netatmo;
-  const c = collectorHealth(s);
   const b = backupHealth(s);
   const stale = snapshotIsStale(s);
   return (
@@ -54,7 +53,7 @@ export function HubDataAssets({ workspaceSlug }: { workspaceSlug: string }) {
         <div>
           <h1 className="text-24 font-semibold text-primary">数据资产</h1>
           <p className="mt-1 text-13 text-tertiary">
-            Netatmo 关键观测 · Climet3 采集与计算 · HD6500 NAS 备份
+            在线采集 · Climet3 数据与计算 · HD6500 NAS 备份
           </p>
         </div>
         <Button
@@ -82,18 +81,11 @@ export function HubDataAssets({ workspaceSlug }: { workspaceSlug: string }) {
           </p>
         </Card>
       )}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <Metric
-          icon={Activity}
-          title="Netatmo · 最近采集"
-          value={eventTime(a.collector.last_observation_utc)}
-          detail={c.tone === "good" ? ageLabel(a.collector.last_observation_utc) : c.detail}
-          tone={c.tone}
-          indicator
-        />
+      <div className="grid grid-cols-1 items-start gap-3 xl:grid-cols-[minmax(0,2fr)_minmax(240px,1fr)]">
+        <HubOnlineCollection snapshot={s} />
         <Metric
           icon={ShieldCheck}
-          title="NAS · 最近备份"
+          title="NAS · Netatmo 最近备份"
           value={eventTime(a.backup?.completed_utc)}
           detail={
             b.tone === "good" ? ageLabel(a.backup?.completed_utc) : `${b.label} · ${b.detail}`

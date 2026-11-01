@@ -1,13 +1,7 @@
 import type { ReactNode } from "react";
+import { HubOnlineCollection } from "./hub-online-collection";
 import { NasCapacity } from "./hub-nas-capacity";
-import {
-  Activity,
-  ArrowUpRight,
-  CircleAlert,
-  ClipboardList,
-  RefreshCw,
-  ShieldCheck,
-} from "lucide-react";
+import { ArrowUpRight, CircleAlert, ClipboardList, RefreshCw, ShieldCheck } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import useSWR from "swr";
 import { HubSummaryService } from "@/services/hub-summary.service";
@@ -170,22 +164,9 @@ export function HubSummaryPanel({ workspaceSlug }: { workspaceSlug: string }) {
         </div>
       )}
       <div
-        className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4"
+        className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3"
         data-testid="hub-metrics"
       >
-        <Metric
-          icon={Activity}
-          title="Netatmo · 最近采集"
-          indicator
-          value={eventTime(netatmo?.collector.last_observation_utc)}
-          detail={
-            collector.tone === "good"
-              ? ageLabel(netatmo?.collector.last_observation_utc)
-              : `${collector.label} · ${collector.detail}`
-          }
-          tone={collector.tone}
-          href={dataUrl}
-        />
         <Metric
           icon={ShieldCheck}
           title="NAS · 最近备份"
@@ -236,6 +217,7 @@ export function HubSummaryPanel({ workspaceSlug }: { workspaceSlug: string }) {
           await mutate();
         }}
       />
+      <HubOnlineCollection snapshot={snapshot} href={`${dataUrl}#online-collection`} compact />
       <details className="rounded-xl border border-subtle bg-surface-1 p-4">
         <summary className="cursor-pointer text-14 font-semibold">
           全部 {data.plane.projects} 个项目 · 进展与下一步
