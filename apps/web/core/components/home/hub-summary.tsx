@@ -171,6 +171,12 @@ export function HubSummaryPanel({ workspaceSlug }: { workspaceSlug: string }) {
         </div>
       )}
       <HubHomeTimeline workspaceSlug={workspaceSlug} projects={data.plane.portfolio} />
+      <HubProjectProgress
+        workspaceSlug={workspaceSlug}
+        plane={data.plane}
+        records={data.work_records}
+      />
+
       <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(260px,1fr)]">
         <HubOnlineCollection snapshot={snapshot} href={`${dataUrl}#online-collection`} compact />
         <aside className="min-w-0 space-y-3">
@@ -218,7 +224,7 @@ export function HubSummaryPanel({ workspaceSlug }: { workspaceSlug: string }) {
       </div>
       <details className="rounded-lg border border-subtle bg-surface-1 p-4">
         <summary className="cursor-pointer text-14 font-semibold">
-          项目进度与待办 · {number(data.plane.open)} 项未完成
+          待办与全部项目 · {number(data.plane.open)} 项未完成
         </summary>
         <div className="mt-4 space-y-4">
           <div
@@ -248,12 +254,7 @@ export function HubSummaryPanel({ workspaceSlug }: { workspaceSlug: string }) {
               </a>
             ))}
           </div>
-          <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(320px,2fr)]">
-            <HubProjectProgress
-              workspaceSlug={workspaceSlug}
-              plane={data.plane}
-              records={data.work_records}
-            />
+          <div className="min-w-0">
             <HubTasks
               workspaceSlug={workspaceSlug}
               plane={data.plane}

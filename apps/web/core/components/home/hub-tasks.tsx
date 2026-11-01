@@ -71,9 +71,9 @@ export function HubProjectProgress({
           全部项目看板 ↗
         </a>
       </div>
-      <div className="divide-y divide-subtle">
+      <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
         {projects.map((p) => (
-          <article key={p.id} className="min-w-0 py-3 first:pt-0 last:pb-0">
+          <article key={p.id} className="min-w-0">
             <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
               <a
                 href={nativeViewUrl(workspaceSlug, p, "kanban")}
@@ -103,7 +103,8 @@ export function HubProjectProgress({
             {p.next ? (
               <a
                 href={`/${workspaceSlug}/projects/${p.id}/issues/${p.next.id}/`}
-                className="mt-1 block break-words text-13 leading-relaxed text-primary hover:text-accent-primary"
+                title={p.next.name}
+                className="mt-1 block line-clamp-2 break-words text-13 leading-relaxed text-primary hover:text-accent-primary"
               >
                 {p.next.name}
               </a>
@@ -113,9 +114,6 @@ export function HubProjectProgress({
             <div className="mt-2 flex flex-wrap gap-3 text-12 text-accent-primary">
               <a href={nativeViewUrl(workspaceSlug, p, "kanban")}>看板 ↗</a>
               <a href={nativeViewUrl(workspaceSlug, p, "gantt")}>时间轴 ↗</a>
-              <span className="text-tertiary">
-                {p.dated} 项有日期 · {p.undated} 项未定日期
-              </span>
             </div>
           </article>
         ))}
