@@ -1,7 +1,13 @@
 import * as L from "./vendor/leaflet/leaflet.esm.js";
-import { aggregateCells, gridSize, gridText } from "./hub-map-grid.js";
+import {
+  MAP_OPTIONS,
+  CATEGORY_COLORS,
+  stationIndex,
+  clusterText,
+  ringGradient,
+} from "./hub-map-stations.js";
 
-export async function renderMap(root, cells, select) {
+export async function renderMap(root, data, select) {
   root.replaceChildren();
   const toolbar = document.createElement("div");
   toolbar.className = "hub-map-toolbar";
@@ -12,19 +18,16 @@ export async function renderMap(root, cells, select) {
   status.className = "hub-map-status";
   status.setAttribute("role", "status");
   root.append(toolbar, frame, status);
-
   const map = L.map(frame, {
+    ...MAP_OPTIONS,
     center: [22, 10],
     zoom: 2,
-    minZoom: 2,
-    maxZoom: 16,
     maxBounds: [
       [-85, -180],
       [85, 180],
     ],
     maxBoundsViscosity: 1,
     preferCanvas: true,
-    scrollWheelZoom: false,
     zoomAnimation: false,
   });
   const tiles = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -33,70 +36,114 @@ export async function renderMap(root, cells, select) {
     attribution:
       '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors',
   }).addTo(map);
+  map.fitWorld({ padding: [12, 12], maxZoom: 2 });
   let tileFailed = false;
   tiles.on("tileerror", () => {
     tileFailed = true;
-    status.textContent = "部分底图未加载，请检查网络；覆盖格网仍可查看。";
+    updateStatus();
   });
   tiles.on("loading", () => {
     tileFailed = false;
   });
-  tiles.on("load", () => {
-    if (!tileFailed) updateStatus();
-  });
+  tiles.on("load", updateStatus);
   L.control.scale({ imperial: false, position: "bottomleft" }).addTo(map);
   const layer = L.layerGroup().addTo(map);
-  let visible = 0;
+  let includeLegacy = false;
+  let index = stationIndex(data.points, includeLegacy);
+  let represented = 0,
+    clusters = 0,
+    singles = 0;
 
   function updateStatus() {
-    const zoom = map.getZoom(),
-      size = gridSize(zoom);
+    const time = new Date(data.generated_at).toLocaleString(undefined, { hour12: false });
     status.textContent =
-      "缩放 " +
-      zoom +
-      " · 当前视野 " +
-      visible +
-      " 个覆盖区域 · " +
-      size +
-      "° 汇总" +
-      (zoom >= 7 ? " · 已到数据最高精度；继续放大仅增加底图细节" : " · 放大可展开覆盖区域");
+      `缩放 ${map.getZoom()} · 当前聚类代表 ${represented.toLocaleString()} 个站点 · ${clusters} 个聚类 / ${singles} 个单站 · 数据时间 ${time}` +
+      (tileFailed ? " · 部分底图未加载；站点仍可查看" : "");
   }
   function draw() {
     layer.clearLayers();
-    const zoom = map.getZoom(),
-      bounds = map.getBounds();
-    const bins = aggregateCells(cells, zoom);
-    visible = 0;
-    for (const bin of bins) {
-      const box = L.latLngBounds([
-        [bin.south, bin.west],
-        [bin.north, bin.east],
-      ]);
-      if (!bounds.intersects(box)) continue;
-      visible++;
-      const color = bin.fresh > 0 ? "#059669" : bin.both > 0 ? "#2563eb" : "#64748b";
-      const count = bin.old + bin.both + bin.fresh;
-      const marker =
-        zoom >= 7
-          ? L.rectangle(box, { color, weight: 1.5, fillColor: color, fillOpacity: 0.16 })
-          : L.circleMarker(box.getCenter(), {
-              radius: Math.min(17, 3 + Math.log2(1 + count) * 0.9),
-              color: "#ffffff",
-              weight: 1,
-              fillColor: color,
-              fillOpacity: 0.82,
-            });
-      const text = gridText(bin);
-      marker.bindTooltip(text, { direction: "top", className: "hub-map-tooltip" });
+    const b = map.getBounds();
+    const zoom = map.getZoom();
+    const features = index.getClusters(
+      [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()],
+      zoom,
+    );
+    represented = 0;
+    clusters = 0;
+    singles = 0;
+    for (const feature of features) {
+      const p = feature.properties,
+        [lon, lat] = feature.geometry.coordinates;
+      const clustered = Boolean(p.cluster);
+      represented += p.point_count ?? 1;
+      if (clustered) clusters++;
+      else singles++;
+      let marker;
+      if (clustered) {
+        const content = document.createElement("div");
+        content.className = "hub-station-ring";
+        content.style.background = ringGradient(p);
+        const count = document.createElement("span");
+        count.textContent = p.point_count.toLocaleString();
+        content.append(count);
+        marker = L.marker([lat, lon], {
+          icon: L.divIcon({
+            html: content,
+            className: "hub-station-cluster",
+            iconSize: [44, 44],
+            iconAnchor: [22, 22],
+          }),
+          title: clusterText(p) + "；点击展开",
+          keyboard: true,
+        });
+      } else {
+        marker = L.circleMarker([lat, lon], {
+          radius: 6,
+          weight: 1.5,
+          color: "#fff",
+          fillColor: CATEGORY_COLORS[p.category],
+          fillOpacity: 0.9,
+        });
+      }
+      const details = document.createElement("div");
+      if (clustered) {
+        details.textContent =
+          clusterText(p) +
+          (zoom >= MAP_OPTIONS.maxZoom
+            ? " · 此尺度仍有重合位置；未人为移动站点"
+            : " · 点击继续展开");
+      } else {
+        const time = p.seen
+          ? new Date(p.seen * 1000).toLocaleString(undefined, { hour12: false })
+          : "仅旧参考集，不能认定当前在线";
+        details.textContent = `${clusterText(p)} · 源站位置 ${lat.toFixed(5)}, ${lon.toFixed(5)} · 最近观测 ${time}`;
+      }
+      if (clustered)
+        marker.bindTooltip(details, { direction: "top", className: "hub-map-tooltip" });
       marker.on("popupopen", () => marker.closeTooltip());
       marker.on("click", () => {
-        select(text + (zoom < 7 ? " · 已展开此区域" : " · 0.5° 汇总，不是单站位置"));
-        if (zoom < 7) map.setView(box.getCenter(), Math.min(7, zoom + 2));
-        else marker.bindPopup(text).openPopup();
+        select(details.textContent);
+        if (clustered && zoom < MAP_OPTIONS.maxZoom) {
+          map.setView(
+            [lat, lon],
+            Math.min(MAP_OPTIONS.maxZoom, index.getClusterExpansionZoom(p.cluster_id)),
+          );
+        } else {
+          marker.closeTooltip();
+          // Keep the popup independent of marker redraws during its automatic pan.
+          L.popup({
+            minWidth: 100,
+            maxWidth: Math.max(100, Math.min(360, frame.clientWidth - 80)),
+            autoPanPadding: [12, 12],
+          })
+            .setLatLng([lat, lon])
+            .setContent(details.cloneNode(true))
+            .openOn(map);
+        }
       });
       layer.addLayer(marker);
     }
-    if (!tileFailed) updateStatus();
+    updateStatus();
   }
   for (const [label, center, zoom] of [
     ["全球", [22, 10], 2],
@@ -107,28 +154,39 @@ export async function renderMap(root, cells, select) {
     const button = document.createElement("button");
     button.type = "button";
     button.textContent = label;
-    button.addEventListener("click", () => map.setView(center, zoom));
+    button.addEventListener("click", () =>
+      label === "全球"
+        ? map.fitWorld({ padding: [12, 12], maxZoom: 2 })
+        : map.setView(center, zoom),
+    );
     toolbar.append(button);
   }
-  const wheel = document.createElement("button");
-  wheel.type = "button";
-  wheel.textContent = "滚轮缩放";
-  wheel.setAttribute("aria-pressed", "false");
-  wheel.addEventListener("click", () => {
-    const enabled = !map.scrollWheelZoom.enabled();
-    if (enabled) map.scrollWheelZoom.enable();
-    else map.scrollWheelZoom.disable();
-    wheel.setAttribute("aria-pressed", String(enabled));
+  const legacy = document.createElement("button");
+  legacy.type = "button";
+  legacy.textContent = "包括旧参考站点";
+  legacy.setAttribute("aria-pressed", "false");
+  legacy.addEventListener("click", () => {
+    includeLegacy = !includeLegacy;
+    legacy.setAttribute("aria-pressed", String(includeLegacy));
+    index = stationIndex(data.points, includeLegacy);
+    draw();
+    select(
+      includeLegacy ? "已加入旧参考站点；灰色不表示当前在线。" : "仅显示最近 24 小时有观测的站点。",
+    );
   });
-  toolbar.append(wheel);
+  toolbar.append(legacy);
   map.on("moveend", draw);
   const resize = new ResizeObserver(() => map.invalidateSize({ pan: false }));
   resize.observe(frame);
   draw();
-  select("点击覆盖区域查看数量；可用 + / −、双击或触屏缩放。底图随缩放加载，数据精度为 0.5°。");
+  select(
+    "滚轮缩放 · 点击聚类展开 · 放大查看源站位置；默认最近 24 小时，圆环表示站点构成，不代表气象数值。",
+  );
   return {
-    update(nextCells) {
-      cells = nextCells;
+    update(nextData) {
+      if (nextData.generated_at === data.generated_at) return;
+      data = nextData;
+      index = stationIndex(data.points, includeLegacy);
       draw();
     },
     destroy() {

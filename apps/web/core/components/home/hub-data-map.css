@@ -48,6 +48,31 @@
 }
 .hub-data-map .hub-map-tooltip {
   width: max-content;
-  max-width: min(420px, 75vw);
+  max-width: min(420px, 50vw);
   white-space: normal;
+}
+
+.hub-station-ring {
+  width: 44px;
+  height: 44px;
+  padding: 4px;
+  border-radius: 50%;
+  box-shadow: 0 1px 6px #0005;
+}
+.hub-station-ring span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #fffdf8;
+  color: #17212b;
+  font-size: 10px;
+  font-weight: 700;
+}
+.hub-station-cluster:focus-visible {
+  outline: 3px solid #2563eb;
+  outline-offset: 4px;
+  border-radius: 50%;
 }

@@ -1,32 +1,35 @@
 import { useEffect, useRef, useState } from "react";
 import "./hub-data-map.css";
-export type MapCell = [number, number, number, number, number];
-type MapController = { update: (cells: MapCell[]) => void; destroy: () => void };
+export type StationMap = {
+  generated_at: string;
+  points: [number, number, number, number | null][];
+};
+type MapController = { update: (data: StationMap) => void; destroy: () => void };
 type MapModule = {
   renderMap: (
     root: HTMLDivElement,
-    cells: MapCell[],
+    data: StationMap,
     select: (text: string) => void,
   ) => Promise<MapController>;
 };
-export function HubDataMap({ cells }: { cells: MapCell[] }) {
+export function HubDataMap({ data }: { data: StationMap }) {
   const ref = useRef<HTMLDivElement>(null);
   const controller = useRef<MapController | undefined>(undefined);
-  const latestCells = useRef(cells);
-  const [detail, setDetail] = useState("拖动、缩放或点选格网查看站点构成");
+  const latestData = useRef(data);
+  const [detail, setDetail] = useState("滚轮缩放或点击聚类，展开真实站点位置");
   const [error, setError] = useState("");
   useEffect(() => {
-    latestCells.current = cells;
-    controller.current?.update(cells);
-  }, [cells]);
+    latestData.current = data;
+    controller.current?.update(data);
+  }, [data]);
   useEffect(() => {
     let active = true;
-    const moduleUrl = "/hub-data-map.js?v=2";
+    const moduleUrl = "/hub-data-map.js?v=5";
     void (async () => {
       try {
         const module = (await import(/* @vite-ignore */ moduleUrl)) as MapModule;
         if (!active || !ref.current) return;
-        const map = await module.renderMap(ref.current, latestCells.current, (text) => {
+        const map = await module.renderMap(ref.current, latestData.current, (text) => {
           if (active) setDetail(text);
         });
         if (!active) map.destroy();
@@ -48,9 +51,9 @@ export function HubDataMap({ cells }: { cells: MapCell[] }) {
     <div className="hub-data-map">
       <link rel="stylesheet" href="/vendor/leaflet/leaflet.css" />
       <div className="mb-3 flex flex-wrap gap-4 text-12 text-tertiary">
-        <span>● 灰：旧参考集独有</span>
+        <span>● 灰：旧参考集独有（可选）</span>
         <span>● 蓝：两者都有</span>
-        <span>● 绿：含近 24 小时新增</span>
+        <span>● 绿：相对旧参考集新增</span>
       </div>
       <div ref={ref} className="min-h-[340px] w-full" aria-label="Netatmo 全球站点覆盖地图" />
       <p className="mt-3 text-12 text-tertiary" aria-live="polite">

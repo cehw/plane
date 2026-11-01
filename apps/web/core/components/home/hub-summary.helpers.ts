@@ -37,6 +37,7 @@ export type OnlineCollector = {
   detail?: string;
 };
 export type HubSnapshot = {
+  station_map?: { generated_at: string; points: [number, number, number, number | null][] };
   online_collection?: { checked_at: string; items: OnlineCollector[] };
   generated_at: string;
   received_at?: string;

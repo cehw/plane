@@ -41,10 +41,10 @@ export function HubCoverage({
         ))}
       </div>
       <Card>
-        {a.map_cells ? (
-          <HubDataMap cells={a.map_cells} />
+        {snapshot.station_map ? (
+          <HubDataMap data={snapshot.station_map} />
         ) : (
-          <p className="text-13 text-tertiary">覆盖格网等待同步，不能当作零覆盖。</p>
+          <p className="text-13 text-tertiary">真实站点位置等待同步，不能当作零覆盖。</p>
         )}
       </Card>
       {storage && (
