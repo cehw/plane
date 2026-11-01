@@ -1,3 +1,9 @@
+import {
+  RESEARCH_PROJECT_GROUPS as researchGroups,
+  PERSONAL_PROJECTS as personalProjects,
+  STELLERUS_PROJECTS as stellerusProjects,
+} from "../project/project-scopes";
+
 export type TimelineDates = { start_date?: string | null; target_date?: string | null };
 export function timelineDateLabel(issue: TimelineDates) {
   if (issue.start_date && issue.target_date)
@@ -145,29 +151,6 @@ export function timelineEntryHref(workspaceSlug: string, entry: TimelineEntry) {
   return `${project}/issues/`;
 }
 
-const researchGroups = [
-  {
-    id: "ongoing",
-    name: "Ongoing",
-    projects: [
-      "Himawari",
-      "LEGO ESM / UCM",
-      "HydroTuring",
-      "极端高温外推",
-      "气候代理模型外推",
-      "NeuralGCM 研究",
-    ],
-  },
-  { id: "revision", name: "Revision", projects: ["GRL 修订"] },
-  {
-    id: "research-support",
-    name: "研究支持",
-    projects: ["共享科研数据", "研究基础设施", "文献阅读"],
-  },
-  { id: "academic", name: "学术事务", projects: ["论文审稿", "AI 教学", "ASCE"] },
-];
-const personalProjects = ["个人网站", "全球求职", "差旅与报销", "量化模拟"];
-const stellerusProjects = ["Stellerus 风电", "Stellerus CLP", "WRF / LAE"];
 const siteCatalog = [
   "HK-CLP Ta",
   "Jiangsu wind multiple",

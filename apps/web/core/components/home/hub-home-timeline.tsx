@@ -243,6 +243,12 @@ export const HubHomeTimeline = observer(function HubHomeTimeline({
         <div className="flex items-center gap-3">
           <h2 className="text-14 font-semibold">项目时间轴</h2>
           <span className="text-11 text-tertiary">按工作线展开</span>
+          <a
+            href={`/${workspaceSlug}/projects/?scope=research`}
+            className="text-12 text-accent-primary"
+          >
+            管理科研项目 ↗
+          </a>
         </div>
         <div className="flex min-w-0 flex-wrap items-center gap-2">
           <select
@@ -336,24 +342,43 @@ export const HubHomeTimeline = observer(function HubHomeTimeline({
                         {row.name}
                       </a>
                     ) : (
-                      <button
-                        type="button"
-                        aria-expanded={expanded.has(row.id)}
-                        onClick={() => toggle(row.id)}
-                        title={`${row.name} · ${row.entries.length} 条记录`}
-                        className={`flex w-full min-w-0 items-center gap-1.5 text-left text-12 text-primary hover:text-accent-primary ${row.type === "category" ? "font-semibold" : ""}`}
-                        style={{ paddingLeft: row.level * 10 }}
-                      >
-                        {expanded.has(row.id) ? (
-                          <ChevronDown size={14} className="shrink-0" />
-                        ) : (
-                          <ChevronRight size={14} className="shrink-0" />
-                        )}
-                        <span className="truncate">{row.name}</span>
-                        <span className="ml-auto shrink-0 text-11 font-normal text-tertiary">
-                          {row.entries.length}
-                        </span>
-                      </button>
+                      <div className="flex min-w-0 items-center gap-1">
+                        <button
+                          type="button"
+                          aria-expanded={expanded.has(row.id)}
+                          onClick={() => toggle(row.id)}
+                          title={`${row.name} · ${row.entries.length} 条记录`}
+                          className={`flex w-full min-w-0 items-center gap-1.5 text-left text-12 text-primary hover:text-accent-primary ${row.type === "category" ? "font-semibold" : ""}`}
+                          style={{ paddingLeft: row.level * 10 }}
+                        >
+                          {expanded.has(row.id) ? (
+                            <ChevronDown size={14} className="shrink-0" />
+                          ) : (
+                            <ChevronRight size={14} className="shrink-0" />
+                          )}
+                          <span className="truncate">{row.name}</span>
+                          <span className="ml-auto shrink-0 text-11 font-normal text-tertiary">
+                            {row.entries.length}
+                          </span>
+                        </button>
+                        {row.type === "lane" &&
+                          new Set(row.entries.map((entry) => entry.project_id)).size === 1 && (
+                            <a
+                              href={nativeViewUrl(
+                                workspaceSlug,
+                                projects.find(
+                                  (project) => project.id === row.entries[0].project_id,
+                                )!,
+                                "kanban",
+                              )}
+                              aria-label={`管理项目 ${row.name}`}
+                              title={`打开 ${row.name} 项目看板`}
+                              className="shrink-0 rounded p-1 text-tertiary hover:bg-surface-2 hover:text-accent-primary"
+                            >
+                              <ArrowUpRight size={13} />
+                            </a>
+                          )}
+                      </div>
                     )
                   }
                 />
